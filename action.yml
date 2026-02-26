@@ -32,8 +32,8 @@ runs:
     - name: Run Security Scan
       shell: bash
       run: |
-        ARGS="reposec scan ${{ inputs.path }} --severity ${{ inputs.severity }} --format ${{ inputs.format }}"
+        ARGS=(scan "${{ inputs.path }}" --severity "${{ inputs.severity }}" --format "${{ inputs.format }}")
         if [ -n "${{ inputs.config }}" ]; then
-          ARGS="$ARGS --config ${{ inputs.config }}"
+          ARGS+=(--config "${{ inputs.config }}")
         fi
-        $ARGS
+        reposec "${ARGS[@]}"

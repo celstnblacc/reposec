@@ -53,6 +53,11 @@ class TestScanCommand:
         result = runner.invoke(app, ["scan", str(FIXTURES), "--severity", "bogus"])
         assert result.exit_code == 1
 
+    def test_scan_invalid_format(self):
+        result = runner.invoke(app, ["scan", str(FIXTURES), "--format", "bogus"])
+        assert result.exit_code == 1
+        assert "Unknown format" in result.output
+
 
 class TestListRulesCommand:
     def test_list_rules_terminal(self):
@@ -70,6 +75,11 @@ class TestListRulesCommand:
         ids = {r["id"] for r in rules}
         assert "SHELL-001" in ids
         assert "CFG-003" in ids
+
+    def test_list_rules_invalid_format(self):
+        result = runner.invoke(app, ["list-rules", "--format", "bogus"])
+        assert result.exit_code == 1
+        assert "Unknown format" in result.output
 
 
 class TestInitCommand:

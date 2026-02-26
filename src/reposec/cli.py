@@ -60,6 +60,7 @@ def scan_cmd(
     ),
 ) -> None:
     """Scan a directory for security vulnerabilities."""
+    format = format.lower()
     config = load_config(config_path=config_file, target_dir=path)
 
     threshold = None
@@ -72,7 +73,11 @@ def scan_cmd(
 
     result = scan(target_dir=path, config=config, severity_threshold=threshold)
 
-    formatter = get_formatter(format)
+    try:
+        formatter = get_formatter(format)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(code=1)
     if format == "terminal":
         if output:
             # Need recorded output for file
@@ -100,6 +105,11 @@ def list_rules(
     ),
 ) -> None:
     """List all available security rules."""
+    format = format.lower()
+    if format not in {"terminal", "json"}:
+        console.print(f"[red]Unknown format: {format!r}. Choose from: terminal, json[/red]")
+        raise typer.Exit(code=1)
+
     load_builtin_rules()
     registry = get_registry()
 

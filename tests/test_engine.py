@@ -75,3 +75,52 @@ class TestScan:
         assert "findings" in d
         assert "summary" in d
         assert "total" in d["summary"]
+
+    def test_scan_loads_custom_rules(self, tmp_path):
+        rule_dir = tmp_path / "custom_rules"
+        rule_dir.mkdir()
+        (rule_dir / "custom_rule.py").write_text(
+            """
+from reposec.models import Finding, Severity
+from reposec.rules import register
+
+@register(
+    id="CUST-001",
+    name="custom-test-rule",
+    severity=Severity.LOW,
+    description="Custom rule for tests",
+    extensions=[".txt"],
+)
+def custom_rule(file_path, content, config=None):
+    findings = []
+    for i, line in enumerate(content.splitlines(), 1):
+        if "danger" in line:
+            findings.append(
+                Finding(
+                    rule_id="CUST-001",
+                    severity=Severity.LOW,
+                    file_path=file_path,
+                    line_number=i,
+                    line_content=line.rstrip(),
+                    message="custom danger marker found",
+                )
+            )
+    return findings
+""".strip()
+        )
+        (tmp_path / "sample.txt").write_text("ok\ndanger\n")
+
+        config = Config(custom_rules_dirs=["custom_rules"])
+        result = scan(tmp_path, config=config, severity_threshold=Severity.LOW)
+        assert any(f.rule_id == "CUST-001" for f in result.findings)
+
+    def test_scan_deduplicates_py005_and_shell009(self, tmp_path):
+        p = tmp_path / "app.py"
+        p.write_text(
+            "import subprocess\nsubprocess.run('ls', shell=True)\n",
+        )
+        result = scan(tmp_path, severity_threshold=Severity.LOW)
+        shell_009 = [f for f in result.findings if f.rule_id == "SHELL-009"]
+        py_005 = [f for f in result.findings if f.rule_id == "PY-005"]
+        assert len(py_005) == 1
+        assert len(shell_009) == 0

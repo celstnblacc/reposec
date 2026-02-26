@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -70,10 +72,13 @@ def get_rules_for_file(file_path: Path) -> list[RuleMeta]:
     applicable = []
     for rule in _registry.values():
         for pattern in rule.extensions:
-            if pattern.startswith(".") and ext == pattern:
-                applicable.append(rule)
-                break
-            elif not pattern.startswith(".") and name == pattern:
+            if pattern.startswith("."):
+                # Extension patterns match normal suffixes (e.g., ".py"), and also
+                # dotfiles like ".env" / ".env.local" that do not expose ".env" as suffix.
+                if ext == pattern or name == pattern or name.startswith(f"{pattern}."):
+                    applicable.append(rule)
+                    break
+            elif name == pattern:
                 applicable.append(rule)
                 break
     return applicable
@@ -86,3 +91,27 @@ def load_builtin_rules() -> None:
     from reposec.rules import javascript as _js  # noqa: F401
     from reposec.rules import python as _py  # noqa: F401
     from reposec.rules import shell as _sh  # noqa: F401
+
+
+def load_custom_rules(rule_dirs: list[Path]) -> int:
+    """Load custom rule modules from configured directories.
+
+    Python files under each directory are imported; @register calls inside those
+    modules add rules to the global registry.
+    """
+    loaded = 0
+    for rule_dir in rule_dirs:
+        if not rule_dir.is_dir():
+            continue
+        for py_file in sorted(rule_dir.rglob("*.py")):
+            module_name = f"reposec_custom_{hash(py_file.resolve()) & 0xFFFFFFFF:x}"
+            if module_name in sys.modules:
+                continue
+            spec = importlib.util.spec_from_file_location(module_name, py_file)
+            if spec is None or spec.loader is None:
+                continue
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
+            loaded += 1
+    return loaded

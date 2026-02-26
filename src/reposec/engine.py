@@ -10,7 +10,7 @@ import pathspec
 
 from reposec.config import Config
 from reposec.models import Finding, ScanResult, Severity
-from reposec.rules import get_rules_for_file, load_builtin_rules
+from reposec.rules import get_rules_for_file, load_builtin_rules, load_custom_rules
 
 SUPPRESSION_RE = re.compile(r"(?:#|//)\s*reposec:ignore\s+([\w\-,\s]+)")
 DEFAULT_EXCLUDES = [
@@ -80,6 +80,7 @@ def _scan_file(
     rules = get_rules_for_file(file_path)
     findings: list[Finding] = []
 
+    seen_line_rules: dict[int, set[str]] = {}
     for rule in rules:
         if rule.id in (config.disable_rules or []):
             continue
@@ -88,6 +89,12 @@ def _scan_file(
 
         rule_findings = rule.func(file_path, content, config)
         for finding in rule_findings:
+            # PY-005 already covers subprocess shell=True in Python files.
+            if (
+                finding.rule_id == "SHELL-009"
+                and "PY-005" in seen_line_rules.get(finding.line_number, set())
+            ):
+                continue
             # Check severity threshold
             if finding.severity < severity_threshold:
                 continue
@@ -96,6 +103,7 @@ def _scan_file(
             if finding.rule_id in suppressed:
                 continue
             findings.append(finding)
+            seen_line_rules.setdefault(finding.line_number, set()).add(finding.rule_id)
 
     return findings
 
@@ -121,6 +129,11 @@ def scan(
         config = Config()
 
     load_builtin_rules()
+    custom_dirs: list[Path] = []
+    for rule_dir in config.custom_rules_dirs:
+        p = Path(rule_dir)
+        custom_dirs.append(p if p.is_absolute() else (target_dir / p))
+    load_custom_rules(custom_dirs)
 
     threshold = severity_threshold or Severity(config.severity_threshold)
     result = ScanResult()
