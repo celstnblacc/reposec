@@ -31,9 +31,7 @@ pip install -e ".[dev]"
 ### In a project (virtual environment)
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install git+https://github.com/celstnblacc/reposec.git
+python3.12 -m venv .venv && source .venv/bin/activate && pip install "git+https://github.com/celstnblacc/reposec.git"
 ```
 
 ### Install from GitHub (correct URL syntax)
@@ -54,6 +52,12 @@ After install:
 ```bash
 reposec --version
 reposec scan .
+```
+
+If you open a new shell later:
+
+```bash
+source .venv/bin/activate && reposec --version
 ```
 
 ## Quick Start
