@@ -4,6 +4,12 @@ Reusable security audit tool for any repository. Scans shell scripts, Python, Ja
 
 ## Install
 
+### From PyPI
+
+```bash
+python -m pip install reposec
+```
+
 ### Recommended: Using pipx (CLI tool)
 
 ```bash
@@ -28,6 +34,26 @@ pip install -e ".[dev]"
 python -m venv .venv
 source .venv/bin/activate
 pip install git+https://github.com/celstnblacc/reposec.git
+```
+
+### Install from GitHub (correct URL syntax)
+
+```bash
+pip install "git+https://github.com/celstnblacc/reposec.git"
+```
+
+You can pin to a branch/tag/commit:
+
+```bash
+pip install "git+https://github.com/celstnblacc/reposec.git@main"
+pip install "git+https://github.com/celstnblacc/reposec.git@efbd130"
+```
+
+After install:
+
+```bash
+reposec --version
+reposec scan .
 ```
 
 ## Quick Start
