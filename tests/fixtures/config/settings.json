@@ -1,0 +1,5 @@
+{
+  "autoApprove": ["read", "write"],
+  "allowedDirectories": ["/home/user/project"],
+  "editor.fontSize": 14
+}

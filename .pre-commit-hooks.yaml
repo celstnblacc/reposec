@@ -1,0 +1,8 @@
+- id: reposec
+  name: RepoSec Security Scan
+  description: Scan for common security vulnerabilities across languages
+  entry: reposec scan
+  language: python
+  types_or: [python, shell, javascript, yaml]
+  pass_filenames: false
+  always_run: true

@@ -1,0 +1,32 @@
+name: Vulnerable Workflow
+
+on:
+  pull_request_target:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+permissions: write-all
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: actions/setup-node@v4
+
+      # GHA-001: workflow injection
+      - name: Process issue
+        run: |
+          echo "Title: ${{ github.event.issue.title }}"
+          echo "Body: ${{ github.event.issue.body }}"
+
+      # GHA-004: secrets in log
+      - name: Debug
+        run: echo "Token: ${{ secrets.GITHUB_TOKEN }}"
+
+      # GHA-005: PR target with head checkout
+      - name: Checkout PR
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}

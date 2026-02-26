@@ -1,0 +1,88 @@
+"""Rule registry with @register decorator."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Callable
+
+from reposec.models import Finding, Severity
+
+# Type for a rule function: (file_path, content, config) -> list[Finding]
+RuleFunc = Callable[..., list[Finding]]
+
+
+@dataclass
+class RuleMeta:
+    """Metadata for a registered rule."""
+
+    id: str
+    name: str
+    severity: Severity
+    description: str
+    extensions: list[str]
+    cwe_id: str | None = None
+    func: RuleFunc | None = field(default=None, repr=False)
+
+
+# Global rule registry
+_registry: dict[str, RuleMeta] = {}
+
+
+def register(
+    *,
+    id: str,
+    name: str,
+    severity: Severity,
+    description: str,
+    extensions: list[str],
+    cwe_id: str | None = None,
+) -> Callable[[RuleFunc], RuleFunc]:
+    """Decorator to register a rule function."""
+
+    def decorator(func: RuleFunc) -> RuleFunc:
+        meta = RuleMeta(
+            id=id,
+            name=name,
+            severity=severity,
+            description=description,
+            extensions=extensions,
+            cwe_id=cwe_id,
+            func=func,
+        )
+        _registry[id] = meta
+        # Attach metadata to function for introspection
+        func._rule_meta = meta  # type: ignore[attr-defined]
+        return func
+
+    return decorator
+
+
+def get_registry() -> dict[str, RuleMeta]:
+    """Return a copy of the rule registry."""
+    return dict(_registry)
+
+
+def get_rules_for_file(file_path: Path) -> list[RuleMeta]:
+    """Return rules applicable to a given file extension."""
+    ext = file_path.suffix.lower()
+    name = file_path.name.lower()
+    applicable = []
+    for rule in _registry.values():
+        for pattern in rule.extensions:
+            if pattern.startswith(".") and ext == pattern:
+                applicable.append(rule)
+                break
+            elif not pattern.startswith(".") and name == pattern:
+                applicable.append(rule)
+                break
+    return applicable
+
+
+def load_builtin_rules() -> None:
+    """Import all builtin rule modules to trigger registration."""
+    from reposec.rules import config as _cfg  # noqa: F401
+    from reposec.rules import github_actions as _gha  # noqa: F401
+    from reposec.rules import javascript as _js  # noqa: F401
+    from reposec.rules import python as _py  # noqa: F401
+    from reposec.rules import shell as _sh  # noqa: F401
