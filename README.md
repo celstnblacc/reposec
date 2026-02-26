@@ -4,16 +4,30 @@ Reusable security audit tool for any repository. Scans shell scripts, Python, Ja
 
 ## Install
 
+### Recommended: Using pipx (CLI tool)
+
 ```bash
-pip install reposec
+pipx install git+https://github.com/celstnblacc/reposec.git
 ```
 
-Or install from source:
+This installs RepoSec in an isolated environment with global command access.
+
+### From source (development)
 
 ```bash
-git clone https://github.com/DevOpsCelstn/reposec.git
+git clone https://github.com/celstnblacc/reposec.git
 cd reposec
+python -m venv .venv
+source .venv/bin/activate
 pip install -e ".[dev]"
+```
+
+### In a project (virtual environment)
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install git+https://github.com/celstnblacc/reposec.git
 ```
 
 ## Quick Start
@@ -108,8 +122,8 @@ eval $cmd  # reposec:ignore SHELL-001, SHELL-002
 ```yaml
 # .pre-commit-config.yaml
 repos:
-  - repo: https://github.com/DevOpsCelstn/reposec
-    rev: v0.1.0
+  - repo: https://github.com/celstnblacc/reposec
+    rev: main
     hooks:
       - id: reposec
 ```
@@ -117,7 +131,7 @@ repos:
 ### GitHub Action
 
 ```yaml
-- uses: DevOpsCelstn/reposec@v0.1.0
+- uses: celstnblacc/reposec@main
   with:
     severity: medium
     format: terminal
@@ -137,6 +151,103 @@ reposec scan . --severity high --format json
 |------|---------|
 | 0 | No findings at or above the severity threshold |
 | 1 | One or more findings detected |
+
+## Suppression Comments
+
+Both `#` and `//` comment styles are supported:
+
+```python
+# Python / Shell
+eval(expr)  # reposec:ignore PY-003
+```
+
+```javascript
+// JavaScript
+eval(code);  // reposec:ignore JS-001
+```
+
+```bash
+# Shell
+eval $cmd  # reposec:ignore SHELL-001
+```
+
+Suppress multiple rules:
+```bash
+eval $cmd  # reposec:ignore SHELL-001, SHELL-002
+```
+
+## About This Project
+
+RepoSec was developed to package 34 security vulnerability patterns discovered during real-world audits of the [spec-kit](https://github.com/celstnblacc/spec-kit) and [superpowers](https://github.com/celstnblacc/superpowers) projects.
+
+The rules focus on:
+- **Command injection**: eval, exec, bash -c, sed, printf with unquoted variables
+- **Path traversal**: Unvalidated path.join(), symlink following
+- **Code/data injection**: YAML unsafe load, pickle, SQL string formatting
+- **Supply chain**: Unpinned GitHub Actions, workflow injection
+- **Configuration**: Committed .env files, overly permissive CORS, auto-approve settings
+
+## Troubleshooting
+
+### "Module not found" errors
+
+If you get import errors, ensure you're in the correct environment:
+
+```bash
+# For pipx installations
+pipx list  # Should show reposec
+
+# For venv installations
+source .venv/bin/activate
+which reposec  # Should show venv path
+```
+
+### Pre-commit hook not running
+
+Ensure `.pre-commit-hooks.yaml` is in the correct location and hooks are configured:
+
+```bash
+pre-commit install
+pre-commit run --all-files  # Test manually
+```
+
+## Development
+
+To contribute or modify rules:
+
+```bash
+git clone https://github.com/celstnblacc/reposec.git
+cd reposec
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+
+# Run tests
+pytest tests/ -v
+
+# Test the CLI
+reposec scan tests/fixtures/
+```
+
+New rules should be added to `src/reposec/rules/` with the `@register` decorator:
+
+```python
+from reposec.models import Finding, Severity
+from reposec.rules import register
+
+@register(
+    id="RULE-001",
+    name="rule-description",
+    severity=Severity.HIGH,
+    description="What this rule detects",
+    extensions=[".py"],
+    cwe_id="CWE-123"
+)
+def rule_001_check(file_path, content, config=None):
+    findings = []
+    # Detection logic here
+    return findings
+```
 
 ## License
 
