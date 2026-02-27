@@ -1,0 +1,4 @@
+# Ignore intentional test fixtures and test code for security rule testing
+tests/fixtures/secrets/.*
+tests/fixtures/supply_chain/.*
+tests/test_rules_secrets.py

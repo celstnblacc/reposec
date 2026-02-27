@@ -90,7 +90,9 @@ def load_builtin_rules() -> None:
     from reposec.rules import github_actions as _gha  # noqa: F401
     from reposec.rules import javascript as _js  # noqa: F401
     from reposec.rules import python as _py  # noqa: F401
+    from reposec.rules import secrets as _sec  # noqa: F401
     from reposec.rules import shell as _sh  # noqa: F401
+    from reposec.rules import supply_chain as _sc  # noqa: F401
 
 
 def load_custom_rules(rule_dirs: list[Path]) -> int:

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7-Layer Unified Security Model - Interactive Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .layers-container {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .layer {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 5px solid;
+            position: relative;
+        }
+
+        .layer:hover {
+            transform: translateX(5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .layer-1 { border-left-color: #FF6B6B; }
+        .layer-2 { border-left-color: #FF8C42; }
+        .layer-3 { border-left-color: #FFD93D; }
+        .layer-4 { border-left-color: #6BCB77; }
+        .layer-5 { border-left-color: #4D96FF; }
+        .layer-6 { border-left-color: #9D84B7; }
+        .layer-7 { border-left-color: #FF006E; }
+
+        .layer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .layer-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .layer-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: white;
+        }
+
+        .layer-1 .layer-badge { background-color: #FF6B6B; }
+        .layer-2 .layer-badge { background-color: #FF8C42; }
+        .layer-3 .layer-badge { background-color: #FFD93D; color: #333; }
+        .layer-4 .layer-badge { background-color: #6BCB77; }
+        .layer-5 .layer-badge { background-color: #4D96FF; }
+        .layer-6 .layer-badge { background-color: #9D84B7; }
+        .layer-7 .layer-badge { background-color: #FF006E; }
+
+        .layer-content {
+            display: none;
+        }
+
+        .layer.expanded .layer-content {
+            display: block;
+        }
+
+        .layer-goal {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 12px;
+            font-size: 0.95em;
+        }
+
+        .tools-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .tool {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .stage {
+            background: #e8f5e9;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: #2e7d32;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .expand-icon {
+            font-size: 1.5em;
+            transition: transform 0.3s ease;
+        }
+
+        .layer.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .reposec-coverage {
+            background: #fff3e0;
+            border-left: 3px solid #FF8C42;
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin-top: 12px;
+            font-weight: 500;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .legend {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: 30px;
+        }
+
+        .legend h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .tools-list {
+                grid-template-columns: 1fr;
+            }
+
+            .layer-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .layer-badge {
+                margin-top: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛡️ 7-Layer Unified Security Model</h1>
+            <p>A comprehensive security strategy requires defense at every layer</p>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">7</div>
+                <div class="stat-label">Security Layers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">40</div>
+                <div class="stat-label">RepoSec Rules</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">6</div>
+                <div class="stat-label">Language Stacks</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">4</div>
+                <div class="stat-label">Severity Levels</div>
+            </div>
+        </div>
+
+        <div class="layers-container">
+            <!-- Layer 7 -->
+            <div class="layer layer-7">
+                <div class="layer-header">
+                    <div>
+                        <h2 class="layer-title">Layer 7: Observability & Incident Response</h2>
+                        <span class="layer-badge">RUNTIME</span>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="layer-content">
+                    <p class="layer-goal">Detect and respond to security incidents in production</p>
+                    <div class="tools-list">
+                        <div class="tool">📊 SIEM (Splunk, ELK)</div>
+                        <div class="tool">🚨 Alerting (PagerDuty)</div>
+                        <div class="tool">📈 Monitoring (Datadog)</div>
+                        <div class="tool">📋 Logging & Audit</div>
+                    </div>
+                    <span class="stage">Stage: Production</span>
+                    <div class="reposec-coverage">RepoSec: No direct coverage (runtime phase)</div>
+                </div>
+            </div>
+
+            <!-- Layer 6 -->
+            <div class="layer layer-6">
+                <div class="layer-header">
+                    <div>
+                        <h2 class="layer-title">Layer 6: Supply Chain Integrity</h2>
+                        <span class="layer-badge">BUILD & DEPLOY</span>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="layer-content">
+                    <p class="layer-goal">Ensure build artifacts and dependencies are properly pinned and trustworthy</p>
+                    <div class="tools-list">
+                        <div class="tool">🐳 Pinned container images</div>
+                        <div class="tool">📌 Locked dependencies</div>
+                        <div class="tool">✍️ Artifact signing (Sigstore)</div>
+                        <div class="tool">🔍 Image scanning</div>
+                    </div>
+                    <span class="stage">Stage: CI/CD & Deployment</span>
+                    <div class="reposec-coverage">✅ RepoSec: SC-001 (Docker :latest), SC-002 (unpinned deps), SC-003 (npm lockfile)</div>
+                </div>
+            </div>
+
+            <!-- Layer 5 -->
+            <div class="layer layer-5">
+                <div class="layer-header">
+                    <div>
+                        <h2 class="layer-title">Layer 5: DAST (Dynamic Testing)</h2>
+                        <span class="layer-badge">TESTING</span>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="layer-content">
+                    <p class="layer-goal">Find runtime vulnerabilities by testing the running application</p>
+                    <div class="tools-list">
+                        <div class="tool">🔧 OWASP ZAP</div>
+                        <div class="tool">🔒 Burp Suite</div>
+                        <div class="tool">🎯 API fuzzing</div>
+                        <div class="tool">🧪 Penetration testing</div>
+                    </div>
+                    <span class="stage">Stage: Testing/Staging</span>
+                    <div class="reposec-coverage">RepoSec: No direct coverage (requires running app)</div>
+                </div>
+            </div>
+
+            <!-- Layer 4 -->
+            <div class="layer layer-4">
+                <div class="layer-header">
+                    <div>
+                        <h2 class="layer-title">Layer 4: AI Reasoning</h2>
+                        <span class="layer-badge">REVIEW</span>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="layer-content">
+                    <p class="layer-goal">Use semantic understanding and architectural knowledge to find complex vulnerabilities</p>
+                    <div class="tools-list">
+                        <div class="tool">🤖 Claude / GPT-4</div>
+                        <div class="tool">👥 Human architects</div>
+                        <div class="tool">🏗️ Threat modeling</div>
+                        <div class="tool">🔐 Authorization review</div>
+                    </div>
+                    <span class="stage">Stage: Code Review</span>
+                    <div class="reposec-coverage">RepoSec: No direct coverage (manual process)</div>
+                </div>
+            </div>
+
+            <!-- Layer 3 -->
+            <div class="layer layer-3 expanded">
+                <div class="layer-header">
+                    <div>
+                        <h2 class="layer-title">Layer 3: SAST (Static Analysis)</h2>
+                        <span class="layer-badge">PRIMARY</span>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="layer-content">
+                    <p class="layer-goal">Find code vulnerabilities without executing the application</p>
+                    <div class="tools-list">
+                        <div class="tool">🔍 Command injection</div>
+                        <div class="tool">🛣️ Path traversal</div>
+                        <div class="tool">💉 SQL injection</div>
+                        <div class="tool">✂️ XXE attacks</div>
+                        <div class="tool">🔐 Weak crypto</div>
+                        <div class="tool">🚫 Unsafe deserialization</div>
+                    </div>
+                    <span class="stage">Stage: Development</span>
+                    <div class="reposec-coverage">✅ RepoSec: 34 rules (SHELL-001-009, PY-001-009, JS-001-008, GHA-001-005, CFG-001-003)</div>
+                </div>
+            </div>
+
+            <!-- Layer 2 -->
+            <div class="layer layer-2">
+                <div class="layer-header">
+                    <div>
+                        <h2 class="layer-title">Layer 2: Secrets Management</h2>
+                        <span class="layer-badge">PREVENTION</span>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="layer-content">
+                    <p class="layer-goal">Prevent hardcoded credentials and tokens from being committed</p>
+                    <div class="tools-list">
+                        <div class="tool">🔑 AWS keys</div>
+                        <div class="tool">☁️ GCP tokens</div>
+                        <div class="tool">🐙 GitHub tokens</div>
+                        <div class="tool">🔐 DB passwords</div>
+                    </div>
+                    <span class="stage">Stage: Git & Pre-commit</span>
+                    <div class="reposec-coverage">✅ RepoSec: SEC-001 (AWS), SEC-002 (GCP), SEC-003 (GitHub tokens)</div>
+                </div>
+            </div>
+
+            <!-- Layer 1 -->
+            <div class="layer layer-1">
+                <div class="layer-header">
+                    <div>
+                        <h2 class="layer-title">Layer 1: Dependencies</h2>
+                        <span class="layer-badge">SUPPLY CHAIN</span>
+                    </div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="layer-content">
+                    <p class="layer-goal">Detect vulnerable or compromised dependencies before they reach production</p>
+                    <div class="tools-list">
+                        <div class="tool">🐍 pip-audit</div>
+                        <div class="tool">📦 npm audit</div>
+                        <div class="tool">🔎 osv-scanner</div>
+                        <div class="tool">🛡️ Snyk</div>
+                    </div>
+                    <span class="stage">Stage: Package Selection</span>
+                    <div class="reposec-coverage">RepoSec: No direct coverage (use external tools)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>RepoSec Coverage</h3>
+            <p style="margin-bottom: 15px; color: #666;">RepoSec provides primary coverage for Layers 3, 2, and 6:</p>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #FFD93D;"></div>
+                <strong>Layer 3 (SAST):</strong> 34 rules across Shell, Python, JavaScript, GitHub Actions, and Config files
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #FF8C42;"></div>
+                <strong>Layer 2 (Secrets):</strong> 3 rules for AWS, GCP, and GitHub tokens
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #9D84B7;"></div>
+                <strong>Layer 6 (Supply Chain):</strong> 3 rules for Docker images, Python deps, and npm lockfiles
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ccc;"></div>
+                <strong>Other Layers (1, 4, 5, 7):</strong> Use external tools or manual processes
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle layer expansion on click
+        const layers = document.querySelectorAll('.layer');
+        layers.forEach(layer => {
+            layer.addEventListener('click', function(e) {
+                // Don't toggle if clicking on a link
+                if (e.target.tagName === 'A') return;
+
+                this.classList.toggle('expanded');
+            });
+        });
+
+        // Expand first layer (Layer 3) on page load for demo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Layer 3 is already expanded by class
+        });
+    </script>
+</body>
+</html>

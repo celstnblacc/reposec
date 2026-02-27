@@ -1,0 +1,6 @@
+# Vulnerable requirements.txt - unpinned dependencies
+requests
+flask
+numpy
+pandas>=1.0
+django

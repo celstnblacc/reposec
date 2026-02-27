@@ -1,3 +1,4 @@
+---
 - id: reposec
   name: RepoSec Security Scan
   description: Scan for common security vulnerabilities across languages

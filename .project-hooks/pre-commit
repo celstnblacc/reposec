@@ -1,0 +1,22 @@
+#!/bin/bash
+# RepoSec Project Pre-commit Hook
+# Runs tests before allowing commits
+
+echo "🧪 Running RepoSec tests..."
+
+# Check if pytest is available
+if ! command -v pytest &> /dev/null; then
+    echo "⚠️  pytest not found - skipping test check"
+    echo "   Install with: pip install -e '.[dev]'"
+    exit 0
+fi
+
+pytest tests/ -v
+
+if [ $? -eq 0 ]; then
+    echo "✅ All tests passed"
+    exit 0
+else
+    echo "❌ Tests failed - commit blocked"
+    exit 1
+fi
