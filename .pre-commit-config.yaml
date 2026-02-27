@@ -1,0 +1,41 @@
+# Pre-commit hook configuration for RepoSec
+# Implements Layers 2 and 3 of the 7-layer security pipeline
+
+repos:
+  # Layer 2: Secrets Management - using RepoSec instead of gitleaks
+  # RepoSec provides secret detection with better test fixture handling
+
+  # Layer 3: SAST - RepoSec
+  - repo: local
+    hooks:
+      - id: reposec
+        name: RepoSec SAST Scanner
+        entry: reposec scan
+        language: system
+        types: [text]
+        pass_filenames: false
+        stages: [commit]
+
+  # General code quality
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: detect-private-key
+        # Exclude test fixtures that intentionally contain credential patterns
+        exclude: ^tests/fixtures/(secrets|supply_chain)/
+
+  # YAML validation
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.26.3
+    hooks:
+      - id: yamllint
+        args: [--strict, --format=parsable]
+        types: [yaml]

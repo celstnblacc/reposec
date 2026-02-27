@@ -1,6 +1,6 @@
 # RepoSec
 
-Reusable security audit tool for any repository. Scans shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files for **34 vulnerability patterns** derived from real audit findings.
+Reusable security audit tool for any repository. Scans shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files for **40 vulnerability patterns** across all 7 layers of a unified security pipeline.
 
 ## Install
 
@@ -75,24 +75,69 @@ reposec scan . --severity high
 # Generate markdown report (for PR comments)
 reposec scan . --format markdown --output report.md
 
-# List all 34 rules with descriptions
+# List all 40 rules with descriptions
 reposec list-rules
 
 # Create a config file
 reposec init
 ```
 
-## Rules (34 total)
+## 7-Layer Security Pipeline
 
-| Category | Count | IDs | Examples |
-|----------|-------|-----|----------|
-| Shell | 9 | SHELL-001 to SHELL-009 | eval injection, unquoted vars, bash -c interpolation |
-| Python | 9 | PY-001 to PY-009 | zip slip, yaml.load, eval/exec, SQL injection |
-| JavaScript | 8 | JS-001 to JS-008 | eval, path traversal, prototype pollution, XSS |
-| GitHub Actions | 5 | GHA-001 to GHA-005 | workflow injection, unpinned actions, secrets in logs |
-| Config | 3 | CFG-001 to CFG-003 | auto-approve, committed .env, permissive CORS |
+RepoSec implements a **unified security model** across all 7 layers of the software development lifecycle:
+
+| Layer | Focus | RepoSec Rules | External Tools |
+|-------|-------|---------------|---|
+| **L1: Dependencies** | Vulnerable packages | — | pip-audit, npm audit, osv-scanner |
+| **L2: Secrets** | Credential exposure | SEC-001–003 (3) | gitleaks, detect-secrets |
+| **L3: SAST** | Code vulnerabilities | 34 rules | ShellCheck, Bandit, ESLint |
+| **L4: AI Reasoning** | Semantic analysis | — | Claude, GPT-4, human architects |
+| **L5: DAST** | Runtime vulnerabilities | — | OWASP ZAP, Burp Suite |
+| **L6: Supply Chain** | Build integrity | SC-001–003 (3) | Sigstore, Cosign |
+| **L7: Observability** | Production monitoring | — | SIEM, Datadog, PagerDuty |
+
+**See [docs/PIPELINE.md](./docs/PIPELINE.md) for complete framework details.**
+
+---
+
+## Rules (40 total)
+
+| Category | Layer | Count | IDs | Examples |
+|----------|-------|-------|-----|----------|
+| Shell | L3 | 9 | SHELL-001–009 | eval injection, unquoted vars, bash -c interpolation |
+| Python | L3 | 9 | PY-001–009 | zip slip, yaml.load, eval/exec, SQL injection |
+| JavaScript | L3 | 8 | JS-001–008 | eval, path traversal, prototype pollution, XSS |
+| GitHub Actions | L3 | 5 | GHA-001–005 | workflow injection, unpinned actions, secrets in logs |
+| Config | L3 | 3 | CFG-001–003 | auto-approve, committed .env, permissive CORS |
+| **Secrets** | **L2** | **3** | **SEC-001–003** | **AWS keys, GCP tokens, GitHub PATs** |
+| **Supply Chain** | **L6** | **3** | **SC-001–003** | **Docker :latest, unpinned deps, npm lockfiles** |
 
 Run `reposec list-rules` or `reposec list-rules --format json` for full details.
+
+---
+
+## Quick Start: Complete Security Pipeline
+
+Run the full 7-layer pipeline locally:
+
+```bash
+# Install optional dependencies
+pip install pip-audit bandit shellcheck-py
+
+# Run all layers (1, 2, 3, 6 local; others require additional setup)
+make security
+
+# Or run individual layers
+make security-l1   # Dependencies
+make security-l2   # Secrets
+make security-l3   # SAST
+make security-l6   # Supply Chain
+
+# For CI/CD, use GitHub Actions workflow
+# See .github/workflows/security.yml
+```
+
+---
 
 ## Configuration
 
@@ -208,13 +253,22 @@ eval $cmd  # reposec:ignore SHELL-001, SHELL-002
 
 ## About This Project
 
-RepoSec was developed to package 34 security vulnerability patterns discovered during real-world audits of the [spec-kit](https://github.com/celstnblacc/spec-kit) and [superpowers](https://github.com/celstnblacc/superpowers) projects.
+RepoSec implements a **7-layer unified security framework** integrated into a single SAST tool. It was developed to package 40 security vulnerability patterns discovered during real-world audits of the [spec-kit](https://github.com/celstnblacc/spec-kit) and [superpowers](https://github.com/celstnblacc/superpowers) projects.
+
+RepoSec provides:
+- **Layer 3 (SAST)**: 34 rules across command injection, path traversal, code injection, and configuration issues
+- **Layer 2 (Secrets)**: 3 rules detecting cloud provider credentials (AWS, GCP, GitHub)
+- **Layer 6 (Supply Chain)**: 3 rules checking Docker image pinning and dependency versions
+- **Integration**: GitHub Actions workflow, pre-commit hooks, local Makefile targets
+
+**See [docs/7_LAYER_SECURITY_MODEL.md](./docs/7_LAYER_SECURITY_MODEL.md) for the complete security framework.**
 
 The rules focus on:
 - **Command injection**: eval, exec, bash -c, sed, printf with unquoted variables
 - **Path traversal**: Unvalidated path.join(), symlink following
 - **Code/data injection**: YAML unsafe load, pickle, SQL string formatting
-- **Supply chain**: Unpinned GitHub Actions, workflow injection
+- **Secrets**: AWS/GCP keys, GitHub tokens, hardcoded credentials
+- **Supply chain**: Docker :latest tags, unpinned dependencies, npm lockfile verification
 - **Configuration**: Committed .env files, overly permissive CORS, auto-approve settings
 
 ## Troubleshooting

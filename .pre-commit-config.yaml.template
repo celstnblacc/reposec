@@ -1,0 +1,171 @@
+# 7-Layer Unified Security Pipeline - Pre-commit Configuration Template
+#
+# Copy this file to .pre-commit-config.yaml in your project and customize as needed.
+# This template implements all 7 layers of security using pre-commit hooks.
+#
+# See https://pre-commit.com for more information
+# See docs/PIPELINE.md for details on each layer
+
+repos:
+  # ===== Layer 1: Dependencies =====
+  # Not typically enforced via pre-commit (would prevent commits on outdated packages)
+  # Instead, run `pip-audit` and `npm audit` in CI/CD
+  # See Makefile target `security-l1`
+
+  # ===== Layer 2: Secrets Management =====
+
+  # Detect secrets with gitleaks
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.1
+    hooks:
+      - id: gitleaks
+        name: Detect secrets (gitleaks)
+        entry: gitleaks detect --source=local --verbose
+        language: system
+        stages: [commit]
+        pass_filenames: false
+
+  # RepoSec - Layer 2 specific rules (Secrets)
+  - repo: local
+    hooks:
+      - id: reposec-secrets
+        name: Detect secrets (reposec)
+        entry: reposec scan --severity critical --rules SEC-001,SEC-002,SEC-003
+        language: system
+        types: [text]
+        stages: [commit]
+        pass_filenames: false
+
+  # ===== Layer 3: SAST (Static Application Security Testing) =====
+
+  # RepoSec - Full SAST scanning
+  - repo: local
+    hooks:
+      - id: reposec
+        name: RepoSec SAST
+        entry: reposec scan
+        language: system
+        types: [text]
+        stages: [commit]
+        pass_filenames: false
+        verbose: true
+
+  # Additional SAST tools for complementary coverage
+
+  # Bandit - Python security analysis
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        name: Bandit (Python security)
+        types: [python]
+        args: [--severity-level=medium, --confidence-level=medium]
+        stages: [commit]
+
+  # ShellCheck - Shell script analysis
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.2
+    hooks:
+      - id: shellcheck
+        name: ShellCheck (Shell security)
+        types: [shell]
+        stages: [commit]
+
+  # ===== Layer 4: AI Reasoning =====
+  # This layer is typically manual (human code review)
+  # Consider using an LLM like Claude via custom hooks if needed
+
+  # ===== Layer 5: DAST =====
+  # DAST is not enforced via pre-commit (requires running application)
+  # Run in CI/CD via GitHub Actions or manually in testing environment
+
+  # ===== Layer 6: Supply Chain Integrity =====
+
+  # RepoSec - Layer 6 specific rules (Supply Chain)
+  - repo: local
+    hooks:
+      - id: reposec-supply-chain
+        name: Supply chain integrity (reposec)
+        entry: reposec scan --rules SC-001,SC-002,SC-003
+        language: system
+        types: [text]
+        stages: [commit]
+        pass_filenames: false
+
+  # Hadolint - Dockerfile best practices
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        name: Hadolint (Dockerfile)
+        types: [dockerfile]
+        stages: [commit]
+
+  # ===== Layer 7: Observability =====
+  # Observability is typically a runtime/production concern
+  # Ensure logging is configured in deployment scripts
+
+  # ===== General Best Practices =====
+
+  # Prevent committing large files
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  # Detect private keys
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: detect-private-key
+
+  # YAML validation
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.26.3
+    hooks:
+      - id: yamllint
+        args: [--strict, --format=parsable]
+        types: [yaml]
+
+# ===== Configuration Notes =====
+#
+# 1. All security tools are pinned to specific revisions (not `main` or `latest`)
+#    to ensure reproducible behavior
+#
+# 2. RepoSec hooks use local repository configuration
+#    (assuming reposec is installed locally via `pip install -e .`)
+#
+# 3. Most hooks run on commit stage; some could be moved to commit-msg or push stages
+#    Adjust stages: [commit, push] as needed
+#
+# 4. For CI/CD, also use .github/workflows/security.yml which includes:
+#    - Layer 1: pip-audit, npm audit
+#    - Layer 5: OWASP ZAP
+#    - All other layers with full reporting
+#
+# 5. To use this template:
+#    cp .pre-commit-config.yaml.template .pre-commit-config.yaml
+#    pre-commit install
+#    # Edit .pre-commit-config.yaml to customize for your project
+#    pre-commit run --all-files  # Test on all files
+#
+# 6. Customization options:
+#    - Remove hooks you don't need
+#    - Add --max-violations flag to some hooks
+#    - Adjust `stages` to run on different git lifecycle events
+#    - Add `exclude` patterns to skip certain files/directories
+#    - Set `pass_filenames: true` to pass file paths instead of scanning all
+#
+# ===== Updating Hooks =====
+#
+# Pre-commit automatically manages tool versions. To update:
+#   pre-commit autoupdate
+#
+# This will update all rev: fields to their latest versions (respecting semver constraints)
