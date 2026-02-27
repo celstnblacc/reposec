@@ -1,5 +1,6 @@
+---
 name: 'RepoSec Security Scan'
-description: 'Scan repository for common security vulnerabilities across languages'
+description: 'Scan for security vulnerabilities across languages'
 branding:
   icon: 'shield'
   color: 'red'
@@ -32,7 +33,8 @@ runs:
     - name: Run Security Scan
       shell: bash
       run: |
-        ARGS=(scan "${{ inputs.path }}" --severity "${{ inputs.severity }}" --format "${{ inputs.format }}")
+        ARGS=(scan "${{ inputs.path }}" --severity "${{ inputs.severity }}")
+        ARGS+=(--format "${{ inputs.format }}")
         if [ -n "${{ inputs.config }}" ]; then
           ARGS+=(--config "${{ inputs.config }}")
         fi
