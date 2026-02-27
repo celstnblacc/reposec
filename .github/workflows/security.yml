@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -90,7 +90,10 @@ jobs:
         run: pip install -e .
 
       - name: Run RepoSec for Secrets (Layer 2)
-        run: reposec scan . --severity critical --rules SEC-001,SEC-002,SEC-003 --format json > layer2-report.json || true
+        run: |
+          reposec scan . --severity critical \
+            --rules SEC-001,SEC-002,SEC-003 \
+            --format json > layer2-report.json || true
         continue-on-error: true
 
       - name: Upload Layer 2 Report

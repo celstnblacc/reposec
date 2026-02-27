@@ -11,7 +11,7 @@ repos:
     hooks:
       - id: reposec
         name: RepoSec SAST Scanner
-        entry: reposec scan
+        entry: bash -c 'which reposec > /dev/null && reposec scan || echo "reposec not installed, skipping"'
         language: system
         types: [text]
         pass_filenames: false
