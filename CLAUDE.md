@@ -249,6 +249,30 @@ reposec scan tests/fixtures/ --severity critical
 4. **Verify no hardcoded secrets**: `grep -r "password\|api_key\|secret" src/ | grep -v "test\|example"`
 5. **Update documentation** if adding/changing rules
 
+### Security Exceptions for Test Fixtures
+
+⚠️ **Important:** This is a security scanner tool. Test fixtures intentionally contain vulnerable code to verify RepoSec detects security issues correctly.
+
+**Test fixtures contain:**
+- Unsafe `eval()` statements (PY-001)
+- Insecure YAML loading (PY-002)
+- Path traversal vulnerabilities (PY-003)
+- Unsafe shell `eval` (SHELL-001)
+- Unsafe eval in JavaScript (JS-001)
+- Untrusted data in GitHub Actions (GHA-001)
+
+**These are EXPECTED and necessary:**
+- Located in `tests/fixtures/` — clearly marked as test data
+- Used to verify RepoSec detection works correctly
+- Should NOT be fixed or removed
+- RepoSec correctly flags them as critical vulnerabilities
+
+**During /ship pipeline:**
+- RepoSec will report vulnerabilities in `tests/fixtures/`
+- This is expected behavior
+- Proceed with commit despite critical findings in fixtures
+- Production code in `src/reposec/` should remain clean
+
 ### No Destructive Operations
 
 - Never delete rules (only deprecate if necessary)
