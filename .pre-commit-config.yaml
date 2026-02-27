@@ -16,6 +16,7 @@ repos:
         types: [text]
         pass_filenames: false
         stages: [commit]
+        exclude: ^tests/fixtures/(secrets|supply_chain)/
 
   # General code quality
   - repo: https://github.com/pre-commit/pre-commit-hooks
