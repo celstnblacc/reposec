@@ -66,14 +66,23 @@ source .venv/bin/activate && reposec --version
 # Scan current directory
 reposec scan .
 
+# Scan another repository by absolute path
+reposec scan /path/to/target-repo
+
 # Scan with JSON output (for CI pipelines)
 reposec scan . --format json
+
+# Scan another repository and save JSON report
+reposec scan /path/to/target-repo --format json --output /tmp/target-repo-reposec.json
 
 # Optional: enable Rust-accelerated secrets scanning
 reposec scan . --rust-secrets
 
 # Only show critical and high findings
 reposec scan . --severity high
+
+# Only show high+ findings for another repository
+reposec scan /path/to/target-repo --severity high
 
 # Generate markdown report (for PR comments)
 reposec scan . --format markdown --output report.md
@@ -83,6 +92,9 @@ reposec list-rules
 
 # Create a config file
 reposec init
+
+# Create a config file in another repository
+reposec init /path/to/target-repo
 ```
 
 ## 7-Layer Security Pipeline
