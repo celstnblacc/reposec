@@ -39,3 +39,7 @@ rust/**/target/
 .env
 .env.*
 !.env.example
+
+# Local docs scratch files (keep repo docs focused)
+docs/SAAS_ARCHITECTURE.md
+docs/IMPLEMENTATION_SUMMARY.md
