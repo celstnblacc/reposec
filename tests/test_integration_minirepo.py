@@ -7,7 +7,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from reposec.cli import app
+from shipguard.cli import app
 
 runner = CliRunner()
 
@@ -26,8 +26,8 @@ def test_minirepo_scan_respects_gitignore_and_detects_vulns(tmp_path):
     assert "ignored.py" not in files
 
 
-def test_minirepo_scan_respects_reposec_config_excludes(tmp_path):
-    (tmp_path / ".reposec.yml").write_text('exclude_paths:\n  - "skipme/**"\n')
+def test_minirepo_scan_respects_shipguard_config_excludes(tmp_path):
+    (tmp_path / ".shipguard.yml").write_text('exclude_paths:\n  - "skipme/**"\n')
     skip = tmp_path / "skipme"
     skip.mkdir()
     (skip / "vuln.py").write_text("eval(untrusted)\n")

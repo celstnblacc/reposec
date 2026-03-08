@@ -3,7 +3,7 @@ severity_threshold: high
 exclude_paths:
   - "tests/**"
   - "docs/**"
-  - "src/reposec/rules/**"
+  - "src/shipguard/rules/**"
   - "rust/**"
   - ".venv/**"
   - "venv/**"

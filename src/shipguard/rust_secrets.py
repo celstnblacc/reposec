@@ -8,22 +8,22 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from reposec.models import Finding, Severity
+from shipguard.models import Finding, Severity
 
 SECRETS_EXTS = {".yml", ".yaml", ".json", ".env", ".conf", ".cfg", ".ini", ".toml"}
 
 
 def _find_rust_binary(target_dir: Path) -> str | None:
     """Find Rust scanner binary from env, PATH, or local build output."""
-    env_bin = os.getenv("REPOSEC_RUST_SECRETS_BIN")
+    env_bin = os.getenv("SHIPGUARD_RUST_SECRETS_BIN")
     if env_bin:
         return env_bin
 
-    path_bin = shutil.which("reposec-secrets")
+    path_bin = shutil.which("shipguard-secrets")
     if path_bin:
         return path_bin
 
-    local = target_dir / "rust" / "reposec-secrets" / "target" / "release" / "reposec-secrets"
+    local = target_dir / "rust" / "shipguard-secrets" / "target" / "release" / "shipguard-secrets"
     if local.is_file():
         return str(local)
     return None

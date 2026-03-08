@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from reposec.models import Severity
-from reposec.rules.shell import (
+from shipguard.models import Severity
+from shipguard.rules.shell import (
     _has_unquoted_var,
     shell_001_eval_injection,
     shell_002_unquoted_variable,

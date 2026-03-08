@@ -11,8 +11,8 @@ import pytest
 
 @pytest.mark.mutation
 def test_mutation_tooling_smoke():
-    if os.getenv("REPOSEC_RUN_MUTATION") != "1":
-        pytest.skip("Set REPOSEC_RUN_MUTATION=1 to run mutation harness.")
+    if os.getenv("SHIPGUARD_RUN_MUTATION") != "1":
+        pytest.skip("Set SHIPGUARD_RUN_MUTATION=1 to run mutation harness.")
 
     if shutil.which("mutmut") is None:
         pytest.skip("mutmut is not installed in this environment.")

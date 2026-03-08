@@ -1,8 +1,8 @@
-# RepoSec Project Guidelines for Claude Code
+# ShipGuard Project Guidelines for Claude Code
 
 ## Project Description
 
-**RepoSec** is a Python-based SAST (Static Application Security Testing) tool that implements a unified 7-layer security framework. It scans repositories for 40 security vulnerability patterns across Shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files.
+**ShipGuard** is a Python-based SAST (Static Application Security Testing) tool that implements a unified 7-layer security framework. It scans repositories for 40 security vulnerability patterns across Shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files.
 
 **Key Features:**
 - 40 built-in security rules across 7 layers
@@ -26,7 +26,7 @@
 
 ## Build Commands
 
-RepoSec uses Hatchling as the build system. Use these commands:
+ShipGuard uses Hatchling as the build system. Use these commands:
 
 ```bash
 # Build the package (wheel)
@@ -62,7 +62,7 @@ pytest tests/test_rules_supply_chain.py -v
 
 **Run with coverage:**
 ```bash
-pytest tests/ --cov=src/reposec --cov-report=html
+pytest tests/ --cov=src/shipguard --cov-report=html
 ```
 
 **Run a specific test:**
@@ -85,8 +85,8 @@ pytest tests/test_cli.py::TestListRulesCommand -v
 ## Project Structure
 
 ```
-reposec/
-├── src/reposec/                    # Main package
+shipguard/
+├── src/shipguard/                    # Main package
 │   ├── __init__.py
 │   ├── cli.py                      # CLI entry point (Typer app)
 │   ├── engine.py                   # Scan engine logic
@@ -148,8 +148,8 @@ reposec/
 All security rules follow this pattern:
 
 ```python
-from reposec.models import Finding, Severity
-from reposec.rules import register
+from shipguard.models import Finding, Severity
+from shipguard.rules import register
 
 @register(
     id="CATEGORY-###",
@@ -221,13 +221,13 @@ make help             # See all available targets
 
 ```bash
 # Scan just the fixtures
-reposec scan tests/fixtures/
+shipguard scan tests/fixtures/
 
 # Scan with JSON output
-reposec scan tests/fixtures/ --format json
+shipguard scan tests/fixtures/ --format json
 
 # Filter by severity
-reposec scan tests/fixtures/ --severity critical
+shipguard scan tests/fixtures/ --severity critical
 ```
 
 ### Update Documentation
@@ -244,14 +244,14 @@ reposec scan tests/fixtures/ --severity critical
 ### Before Committing
 
 1. **Run tests**: `pytest tests/ -v` — All tests must pass
-2. **Check syntax**: `python -m py_compile src/reposec/**/*.py`
-3. **Review rule counts**: `reposec list-rules | wc -l` should match test expectations
+2. **Check syntax**: `python -m py_compile src/shipguard/**/*.py`
+3. **Review rule counts**: `shipguard list-rules | wc -l` should match test expectations
 4. **Verify no hardcoded secrets**: `grep -r "password\|api_key\|secret" src/ | grep -v "test\|example"`
 5. **Update documentation** if adding/changing rules
 
 ### Security Exceptions for Test Fixtures
 
-⚠️ **Important:** This is a security scanner tool. Test fixtures intentionally contain vulnerable code to verify RepoSec detects security issues correctly.
+⚠️ **Important:** This is a security scanner tool. Test fixtures intentionally contain vulnerable code to verify ShipGuard detects security issues correctly.
 
 **Test fixtures contain:**
 - Unsafe `eval()` statements (PY-001)
@@ -263,15 +263,15 @@ reposec scan tests/fixtures/ --severity critical
 
 **These are EXPECTED and necessary:**
 - Located in `tests/fixtures/` — clearly marked as test data
-- Used to verify RepoSec detection works correctly
+- Used to verify ShipGuard detection works correctly
 - Should NOT be fixed or removed
-- RepoSec correctly flags them as critical vulnerabilities
+- ShipGuard correctly flags them as critical vulnerabilities
 
 **During /ship pipeline:**
-- RepoSec will report vulnerabilities in `tests/fixtures/`
+- ShipGuard will report vulnerabilities in `tests/fixtures/`
 - This is expected behavior
 - Proceed with commit despite critical findings in fixtures
-- Production code in `src/reposec/` should remain clean
+- Production code in `src/shipguard/` should remain clean
 
 ### No Destructive Operations
 
@@ -287,7 +287,7 @@ reposec scan tests/fixtures/ --severity critical
 Before each commit, this project runs:
 - All tests (pytest)
 - Syntax checks
-- Security scans (RepoSec)
+- Security scans (ShipGuard)
 
 If any fail, the commit is blocked. Fix the issues and try again.
 
@@ -328,7 +328,7 @@ pre-commit run --all-files
 
 ## References
 
-- **Main Project**: [RepoSec on GitHub](https://github.com/celstnblacc/reposec)
+- **Main Project**: [ShipGuard on GitHub](https://github.com/celstnblacc/shipguard)
 - **7-Layer Framework**: See `docs/7_LAYER_SECURITY_MODEL.md`
 - **Pipeline Guide**: See `docs/PIPELINE.md`
 - **Implementation Details**: See `IMPLEMENTATION_SUMMARY.md`

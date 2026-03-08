@@ -7,14 +7,14 @@ import time
 
 import pytest
 
-from reposec.engine import scan
-from reposec.models import Severity
+from shipguard.engine import scan
+from shipguard.models import Severity
 
 
 @pytest.mark.performance
 def test_scan_performance_budget(tmp_path):
-    if os.getenv("REPOSEC_RUN_PERF") != "1":
-        pytest.skip("Set REPOSEC_RUN_PERF=1 to run performance tests.")
+    if os.getenv("SHIPGUARD_RUN_PERF") != "1":
+        pytest.skip("Set SHIPGUARD_RUN_PERF=1 to run performance tests.")
 
     for i in range(1500):
         (tmp_path / f"safe_{i}.py").write_text("print('ok')\n")

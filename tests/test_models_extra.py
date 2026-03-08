@@ -1,6 +1,6 @@
 """Additional model tests for comparison operators."""
 
-from reposec.models import Severity
+from shipguard.models import Severity
 
 
 def test_severity_comparisons_cover_all_operators():

@@ -13,7 +13,7 @@ Please **do not** open a public GitHub issue for security vulnerabilities.
 
 Report vulnerabilities privately via one of:
 
-- **GitHub private reporting**: [Security Advisories](https://github.com/newblacc/reposec/security/advisories/new)
+- **GitHub private reporting**: [Security Advisories](https://github.com/newblacc/shipguard/security/advisories/new)
 - **Email**: security@devopscelstn.com *(replace with real address before publishing)*
 
 ### What to include
@@ -31,7 +31,7 @@ Report vulnerabilities privately via one of:
 
 ## Security design notes
 
-`reposec` performs **read-only static analysis** — it reads files and matches patterns. It does not:
+`shipguard` performs **read-only static analysis** — it reads files and matches patterns. It does not:
 - Make network requests during scans
 - Store, transmit, or log file contents
 - Require elevated permissions

@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/docker-compose.staging.yml"
 ENV_FILE="$ROOT_DIR/.env.staging"
 ENV_EXAMPLE="$ROOT_DIR/.env.staging.example"
-SERVICE="reposec-runner"
+SERVICE="shipguard-runner"
 MAX_HEALTH_WAIT="${MAX_HEALTH_WAIT:-60}"
 
 usage() {

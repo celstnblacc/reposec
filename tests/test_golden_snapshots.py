@@ -5,8 +5,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from reposec.formatters import format_json, format_markdown, format_terminal
-from reposec.models import Finding, ScanResult, Severity
+from shipguard.formatters import format_json, format_markdown, format_terminal
+from shipguard.models import Finding, ScanResult, Severity
 
 SNAP_DIR = Path(__file__).parent / "snapshots"
 

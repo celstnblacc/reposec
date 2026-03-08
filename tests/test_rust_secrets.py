@@ -5,26 +5,26 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
-from reposec.models import Severity
-from reposec.rust_secrets import _find_rust_binary, run_rust_secrets_scan
+from shipguard.models import Severity
+from shipguard.rust_secrets import _find_rust_binary, run_rust_secrets_scan
 
 
 class TestFindRustBinary:
     def test_prefers_env_var(self, tmp_path, monkeypatch):
         fake_bin = tmp_path / "scanner"
-        monkeypatch.setenv("REPOSEC_RUST_SECRETS_BIN", str(fake_bin))
+        monkeypatch.setenv("SHIPGUARD_RUST_SECRETS_BIN", str(fake_bin))
         monkeypatch.setattr("shutil.which", lambda _: None)
         assert _find_rust_binary(tmp_path) == str(fake_bin)
 
     def test_uses_path_when_env_missing(self, tmp_path, monkeypatch):
-        monkeypatch.delenv("REPOSEC_RUST_SECRETS_BIN", raising=False)
-        monkeypatch.setattr("shutil.which", lambda _: "/usr/local/bin/reposec-secrets")
-        assert _find_rust_binary(tmp_path) == "/usr/local/bin/reposec-secrets"
+        monkeypatch.delenv("SHIPGUARD_RUST_SECRETS_BIN", raising=False)
+        monkeypatch.setattr("shutil.which", lambda _: "/usr/local/bin/shipguard-secrets")
+        assert _find_rust_binary(tmp_path) == "/usr/local/bin/shipguard-secrets"
 
     def test_uses_local_build_output(self, tmp_path, monkeypatch):
-        monkeypatch.delenv("REPOSEC_RUST_SECRETS_BIN", raising=False)
+        monkeypatch.delenv("SHIPGUARD_RUST_SECRETS_BIN", raising=False)
         monkeypatch.setattr("shutil.which", lambda _: None)
-        local = tmp_path / "rust" / "reposec-secrets" / "target" / "release" / "reposec-secrets"
+        local = tmp_path / "rust" / "shipguard-secrets" / "target" / "release" / "shipguard-secrets"
         local.parent.mkdir(parents=True)
         local.write_text("")
         assert _find_rust_binary(tmp_path) == str(local)
@@ -32,17 +32,17 @@ class TestFindRustBinary:
 
 class TestRunRustSecretsScan:
     def test_returns_empty_when_binary_missing(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("reposec.rust_secrets._find_rust_binary", lambda _: None)
+        monkeypatch.setattr("shipguard.rust_secrets._find_rust_binary", lambda _: None)
         findings = run_rust_secrets_scan([tmp_path / "x.yml"], tmp_path)
         assert findings == []
 
     def test_returns_empty_when_no_candidate_extensions(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("reposec.rust_secrets._find_rust_binary", lambda _: "/bin/reposec-secrets")
+        monkeypatch.setattr("shipguard.rust_secrets._find_rust_binary", lambda _: "/bin/shipguard-secrets")
         findings = run_rust_secrets_scan([tmp_path / "main.py"], tmp_path)
         assert findings == []
 
     def test_returns_empty_on_nonzero_exit(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("reposec.rust_secrets._find_rust_binary", lambda _: "/bin/reposec-secrets")
+        monkeypatch.setattr("shipguard.rust_secrets._find_rust_binary", lambda _: "/bin/shipguard-secrets")
         monkeypatch.setattr(
             "subprocess.run",
             lambda *args, **kwargs: SimpleNamespace(returncode=1, stdout=""),
@@ -51,7 +51,7 @@ class TestRunRustSecretsScan:
         assert findings == []
 
     def test_returns_empty_when_subprocess_raises(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("reposec.rust_secrets._find_rust_binary", lambda _: "/bin/reposec-secrets")
+        monkeypatch.setattr("shipguard.rust_secrets._find_rust_binary", lambda _: "/bin/shipguard-secrets")
         monkeypatch.setattr(
             "subprocess.run",
             lambda *args, **kwargs: (_ for _ in ()).throw(OSError("boom")),
@@ -60,7 +60,7 @@ class TestRunRustSecretsScan:
         assert findings == []
 
     def test_returns_empty_on_invalid_json(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("reposec.rust_secrets._find_rust_binary", lambda _: "/bin/reposec-secrets")
+        monkeypatch.setattr("shipguard.rust_secrets._find_rust_binary", lambda _: "/bin/shipguard-secrets")
         monkeypatch.setattr(
             "subprocess.run",
             lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout="{not-json"),
@@ -69,7 +69,7 @@ class TestRunRustSecretsScan:
         assert findings == []
 
     def test_parses_findings_and_skips_malformed_entries(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("reposec.rust_secrets._find_rust_binary", lambda _: "/bin/reposec-secrets")
+        monkeypatch.setattr("shipguard.rust_secrets._find_rust_binary", lambda _: "/bin/shipguard-secrets")
         payload = """
 {
   "findings": [

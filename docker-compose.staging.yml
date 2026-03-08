@@ -1,16 +1,16 @@
 services:
-  reposec-runner:
+  shipguard-runner:
     build:
       context: .
       dockerfile: Dockerfile
-    image: reposec-local:staging
-    container_name: reposec-runner-staging
+    image: shipguard-local:staging
+    container_name: shipguard-runner-staging
     env_file:
       - .env.staging
     command: ["sleep", "infinity"]
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "reposec", "--version"]
+      test: ["CMD", "shipguard", "--version"]
       interval: 30s
       timeout: 5s
       retries: 3

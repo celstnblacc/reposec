@@ -9,8 +9,8 @@ import pytest
 hypothesis = pytest.importorskip("hypothesis")
 from hypothesis import given, settings, strategies as st  # type: ignore[reportMissingImports]
 
-from reposec.rules.python import py_003_eval_exec
-from reposec.rules.shell import shell_002_unquoted_variable
+from shipguard.rules.python import py_003_eval_exec
+from shipguard.rules.shell import shell_002_unquoted_variable
 
 
 @settings(max_examples=80)

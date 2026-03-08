@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from reposec.config import Config
-from reposec.engine import _discover_files, _load_gitignore, _scan_file, scan
-from reposec.models import Finding, Severity
-from reposec.rules import RuleMeta
+from shipguard.config import Config
+from shipguard.engine import _discover_files, _load_gitignore, _scan_file, scan
+from shipguard.models import Finding, Severity
+from shipguard.rules import RuleMeta
 
 
 def test_load_gitignore_and_discover_files_honor_ignore(tmp_path):
@@ -44,14 +44,14 @@ def test_scan_file_skips_rule_without_func(tmp_path, monkeypatch):
         extensions=[".py"],
         func=None,
     )
-    monkeypatch.setattr("reposec.engine.get_rules_for_file", lambda _: [nofunc])
+    monkeypatch.setattr("shipguard.engine.get_rules_for_file", lambda _: [nofunc])
     findings = _scan_file(p, Config(), Severity.LOW)
     assert findings == []
 
 
 def test_scan_file_respects_inline_suppression(tmp_path, monkeypatch):
     p = tmp_path / "x.py"
-    p.write_text("# reposec:ignore CUST-SUP-1\nprint('x')\n")
+    p.write_text("# shipguard:ignore CUST-SUP-1\nprint('x')\n")
 
     def _func(file_path, content, config):
         return [
@@ -60,7 +60,7 @@ def test_scan_file_respects_inline_suppression(tmp_path, monkeypatch):
                 severity=Severity.HIGH,
                 file_path=file_path,
                 line_number=1,
-                line_content="# reposec:ignore CUST-SUP-1",
+                line_content="# shipguard:ignore CUST-SUP-1",
                 message="x",
             )
         ]
@@ -73,14 +73,14 @@ def test_scan_file_respects_inline_suppression(tmp_path, monkeypatch):
         extensions=[".py"],
         func=_func,
     )
-    monkeypatch.setattr("reposec.engine.get_rules_for_file", lambda _: [meta])
+    monkeypatch.setattr("shipguard.engine.get_rules_for_file", lambda _: [meta])
     findings = _scan_file(p, Config(), Severity.LOW)
     assert findings == []
 
 
 def test_scan_rust_branch_filters_disabled_severity_and_suppressed(tmp_path, monkeypatch):
     p = tmp_path / "x.yml"
-    p.write_text("# reposec:ignore SEC-KEEP\nsecret: value\n")
+    p.write_text("# shipguard:ignore SEC-KEEP\nsecret: value\n")
     missing = tmp_path / "missing.yml"  # read_text raises OSError
 
     rust_findings = [
@@ -118,7 +118,7 @@ def test_scan_rust_branch_filters_disabled_severity_and_suppressed(tmp_path, mon
         ),
     ]
 
-    monkeypatch.setattr("reposec.engine.run_rust_secrets_scan", lambda files, target_dir: rust_findings)
+    monkeypatch.setattr("shipguard.engine.run_rust_secrets_scan", lambda files, target_dir: rust_findings)
     res = scan(
         tmp_path,
         config=Config(use_rust_secrets=True, disable_rules=["SEC-DISABLED"]),
@@ -134,6 +134,6 @@ def test_scan_rust_branch_filters_disabled_severity_and_suppressed(tmp_path, mon
 def test_scan_counts_skipped_files_when_worker_raises(tmp_path, monkeypatch):
     p = tmp_path / "x.py"
     p.write_text("print(1)\n")
-    monkeypatch.setattr("reposec.engine._scan_file", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr("shipguard.engine._scan_file", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
     res = scan(tmp_path, severity_threshold=Severity.LOW)
     assert res.files_skipped >= 1

@@ -2,9 +2,9 @@
 
 from pathlib import Path
 
-from reposec.formatters.markdown import format_markdown
-from reposec.formatters.terminal import format_terminal
-from reposec.models import Finding, ScanResult, Severity
+from shipguard.formatters.markdown import format_markdown
+from shipguard.formatters.terminal import format_terminal
+from shipguard.models import Finding, ScanResult, Severity
 
 
 def test_markdown_no_findings_message():

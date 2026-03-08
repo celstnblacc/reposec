@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "reposec"
+name = "shipguard"
 version = "0.2.0"
 description = "Reusable security audit tool for any repository"
 readme = "README.md"
@@ -29,23 +29,23 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/newblacc/reposec"
-Repository = "https://github.com/newblacc/reposec"
-Changelog = "https://github.com/newblacc/reposec/blob/main/CHANGELOG.md"
-"Bug Tracker" = "https://github.com/newblacc/reposec/issues"
-"Security Policy" = "https://github.com/newblacc/reposec/blob/main/SECURITY.md"
+Homepage = "https://github.com/newblacc/shipguard"
+Repository = "https://github.com/newblacc/shipguard"
+Changelog = "https://github.com/newblacc/shipguard/blob/main/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/newblacc/shipguard/issues"
+"Security Policy" = "https://github.com/newblacc/shipguard/blob/main/SECURITY.md"
 
 [project.scripts]
-reposec = "reposec.cli:app"
+shipguard = "shipguard.cli:app"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-cov", "hypothesis>=6.0"]
 
-[project.entry-points."reposec.rules"]
+[project.entry-points."shipguard.rules"]
 # Third-party rule packages register here
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/reposec"]
+packages = ["src/shipguard"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

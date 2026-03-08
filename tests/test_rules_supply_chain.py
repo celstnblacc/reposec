@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from reposec.models import Severity
-from reposec.rules.supply_chain import (
+from shipguard.models import Severity
+from shipguard.rules.supply_chain import (
     sc_001_docker_latest,
     sc_002_unpinned_python_dep,
     sc_003_npm_frozen_lockfile,

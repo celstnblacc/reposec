@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from reposec.engine import scan
-from reposec.models import Severity
+from shipguard.engine import scan
+from shipguard.models import Severity
 
 
 def test_scan_parallel_and_serial_results_are_equivalent(tmp_path):

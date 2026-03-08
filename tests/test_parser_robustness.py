@@ -6,11 +6,11 @@ import random
 import string
 from pathlib import Path
 
-from reposec.rules.github_actions import gha_001_workflow_injection
-from reposec.rules.javascript import js_001_eval
-from reposec.rules.python import py_003_eval_exec
-from reposec.rules.secrets import sec_003_github_token
-from reposec.rules.shell import shell_001_eval_injection
+from shipguard.rules.github_actions import gha_001_workflow_injection
+from shipguard.rules.javascript import js_001_eval
+from shipguard.rules.python import py_003_eval_exec
+from shipguard.rules.secrets import sec_003_github_token
+from shipguard.rules.shell import shell_001_eval_injection
 
 
 def _random_line(rng: random.Random, length: int = 80) -> str:

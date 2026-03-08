@@ -7,7 +7,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from reposec.cli import app
+from shipguard.cli import app
 
 runner = CliRunner()
 
@@ -90,7 +90,7 @@ def test_list_rules_contract_json_schema():
 def test_init_contract_creates_template_with_expected_keys(tmp_path):
     result = runner.invoke(app, ["init", str(tmp_path)])
     assert result.exit_code == 0
-    cfg = (tmp_path / ".reposec.yml").read_text()
+    cfg = (tmp_path / ".shipguard.yml").read_text()
     assert "severity_threshold:" in cfg
     assert "exclude_paths:" in cfg
     assert "use_rust_secrets:" in cfg

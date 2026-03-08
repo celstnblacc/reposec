@@ -28,12 +28,12 @@ jobs:
           pip install -q -e ".[dev]"
 
       - name: Run tests
-        run: pytest tests/ -v --cov=src/reposec --cov-report=term-missing
+        run: pytest tests/ -v --cov=src/shipguard --cov-report=term-missing
 
       - name: Test CLI
         run: |
-          reposec list-rules
-          reposec scan tests/fixtures/ --format json > /tmp/test-output.json
+          shipguard list-rules
+          shipguard scan tests/fixtures/ --format json > /tmp/test-output.json
           python -m json.tool < /tmp/test-output.json > /dev/null
 
   lint:

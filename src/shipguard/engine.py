@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pathspec
 
-from reposec.config import Config
-from reposec.models import Finding, ScanResult, Severity
-from reposec.rust_secrets import run_rust_secrets_scan
-from reposec.rules import get_rules_for_file, load_builtin_rules, load_custom_rules
+from shipguard.config import Config
+from shipguard.models import Finding, ScanResult, Severity
+from shipguard.rust_secrets import run_rust_secrets_scan
+from shipguard.rules import get_rules_for_file, load_builtin_rules, load_custom_rules
 
-SUPPRESSION_RE = re.compile(r"(?:#|//)\s*reposec:ignore\s+([\w\-,\s]+)")
+SUPPRESSION_RE = re.compile(r"(?:#|//)\s*shipguard:ignore\s+([\w\-,\s]+)")
 DEFAULT_EXCLUDES = [
     "node_modules/**",
     ".git/**",
@@ -144,7 +144,7 @@ def scan(
     files = _discover_files(target_dir, config)
     result.files_scanned = len(files)
 
-    from reposec.rules import get_registry
+    from shipguard.rules import get_registry
 
     result.rules_applied = len(get_registry())
 

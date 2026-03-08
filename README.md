@@ -1,4 +1,4 @@
-# RepoSec
+# ShipGuard
 
 Reusable security audit tool for any repository. Scans shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files for **40 vulnerability patterns** across all 7 layers of a unified security pipeline.
 
@@ -7,22 +7,22 @@ Reusable security audit tool for any repository. Scans shell scripts, Python, Ja
 ### From PyPI
 
 ```bash
-python -m pip install reposec
+python -m pip install shipguard
 ```
 
 ### Recommended: Using pipx (CLI tool)
 
 ```bash
-pipx install git+https://github.com/newblacc/reposec.git
+pipx install git+https://github.com/newblacc/shipguard.git
 ```
 
-This installs RepoSec in an isolated environment with global command access.
+This installs ShipGuard in an isolated environment with global command access.
 
 ### From source (development)
 
 ```bash
-git clone https://github.com/newblacc/reposec.git
-cd reposec
+git clone https://github.com/newblacc/shipguard.git
+cd shipguard
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
@@ -31,70 +31,70 @@ pip install -e ".[dev]"
 ### In a project (virtual environment)
 
 ```bash
-python3.12 -m venv .venv && source .venv/bin/activate && pip install "git+https://github.com/newblacc/reposec.git"
+python3.12 -m venv .venv && source .venv/bin/activate && pip install "git+https://github.com/newblacc/shipguard.git"
 ```
 
 ### Install from GitHub (correct URL syntax)
 
 ```bash
-pip install "git+https://github.com/newblacc/reposec.git"
+pip install "git+https://github.com/newblacc/shipguard.git"
 ```
 
 You can pin to a branch/tag/commit:
 
 ```bash
-pip install "git+https://github.com/newblacc/reposec.git@main"
-pip install "git+https://github.com/newblacc/reposec.git@efbd130"
+pip install "git+https://github.com/newblacc/shipguard.git@main"
+pip install "git+https://github.com/newblacc/shipguard.git@efbd130"
 ```
 
 After install:
 
 ```bash
-reposec --version
-reposec scan .
+shipguard --version
+shipguard scan .
 ```
 
 If you open a new shell later:
 
 ```bash
-source .venv/bin/activate && reposec --version
+source .venv/bin/activate && shipguard --version
 ```
 
 ## Quick Start
 
 ```bash
 # Scan current directory
-reposec scan .
+shipguard scan .
 
 # Scan another repository by absolute path
-reposec scan /path/to/target-repo
+shipguard scan /path/to/target-repo
 
 # Scan with JSON output (for CI pipelines)
-reposec scan . --format json
+shipguard scan . --format json
 
 # Scan another repository and save JSON report
-reposec scan /path/to/target-repo --format json --output /tmp/target-repo-reposec.json
+shipguard scan /path/to/target-repo --format json --output /tmp/target-repo-shipguard.json
 
 # Optional: enable Rust-accelerated secrets scanning
-reposec scan . --rust-secrets
+shipguard scan . --rust-secrets
 
 # Only show critical and high findings
-reposec scan . --severity high
+shipguard scan . --severity high
 
 # Only show high+ findings for another repository
-reposec scan /path/to/target-repo --severity high
+shipguard scan /path/to/target-repo --severity high
 
 # Generate markdown report (for PR comments)
-reposec scan . --format markdown --output report.md
+shipguard scan . --format markdown --output report.md
 
 # List all 40 rules with descriptions
-reposec list-rules
+shipguard list-rules
 
 # Create a config file
-reposec init
+shipguard init
 
 # Create a config file in another repository
-reposec init /path/to/target-repo
+shipguard init /path/to/target-repo
 ```
 
 ## Development Staging Bootstrap (Go-Live)
@@ -117,9 +117,9 @@ This workflow uses `docker-compose.staging.yml` and `.env.staging` (auto-copied 
 
 ## 7-Layer Security Pipeline
 
-RepoSec implements a **unified security model** across all 7 layers of the software development lifecycle:
+ShipGuard implements a **unified security model** across all 7 layers of the software development lifecycle:
 
-| Layer | Focus | RepoSec Rules | External Tools |
+| Layer | Focus | ShipGuard Rules | External Tools |
 |-------|-------|---------------|---|
 | **L1: Dependencies** | Vulnerable packages | — | pip-audit, npm audit, osv-scanner |
 | **L2: Secrets** | Credential exposure | SEC-001–003 (3) | gitleaks, detect-secrets |
@@ -145,7 +145,7 @@ RepoSec implements a **unified security model** across all 7 layers of the softw
 | **Secrets** | **L2** | **3** | **SEC-001–003** | **AWS keys, GCP tokens, GitHub PATs** |
 | **Supply Chain** | **L6** | **3** | **SC-001–003** | **Docker :latest, unpinned deps, npm lockfiles** |
 
-Run `reposec list-rules` or `reposec list-rules --format json` for full details.
+Run `shipguard list-rules` or `shipguard list-rules --format json` for full details.
 
 ---
 
@@ -174,7 +174,7 @@ make security-l6   # Supply Chain
 
 ## Configuration
 
-Create `.reposec.yml` in your project root (or run `reposec init`):
+Create `.shipguard.yml` in your project root (or run `shipguard init`):
 
 ```yaml
 # Minimum severity to report: critical, high, medium, low
@@ -198,43 +198,43 @@ CLI flags override config file values.
 
 ### Optional Rust Acceleration (Secrets)
 
-RepoSec can offload `SEC-001`, `SEC-002`, and `SEC-003` scanning to a Rust binary while keeping the rest of the scanner in Python.
+ShipGuard can offload `SEC-001`, `SEC-002`, and `SEC-003` scanning to a Rust binary while keeping the rest of the scanner in Python.
 
 Build the optional binary:
 
 ```bash
-cd rust/reposec-secrets
+cd rust/shipguard-secrets
 cargo build --release
 ```
 
 Then either:
 
 ```bash
-export REPOSEC_RUST_SECRETS_BIN="$PWD/target/release/reposec-secrets"
-reposec scan . --rust-secrets
+export SHIPGUARD_RUST_SECRETS_BIN="$PWD/target/release/shipguard-secrets"
+shipguard scan . --rust-secrets
 ```
 
-Or place `reposec-secrets` in your `PATH`.
+Or place `shipguard-secrets` in your `PATH`.
 
 ## Inline Suppression
 
 Suppress a finding on a specific line:
 
 ```python
-eval(expr)  # reposec:ignore PY-003
+eval(expr)  # shipguard:ignore PY-003
 ```
 
 Or on the line above:
 
 ```python
-# reposec:ignore PY-003
+# shipguard:ignore PY-003
 eval(expr)
 ```
 
 Multiple rules can be suppressed:
 
 ```bash
-eval $cmd  # reposec:ignore SHELL-001, SHELL-002
+eval $cmd  # shipguard:ignore SHELL-001, SHELL-002
 ```
 
 ## Output Formats
@@ -250,16 +250,16 @@ eval $cmd  # reposec:ignore SHELL-001, SHELL-002
 ```yaml
 # .pre-commit-config.yaml
 repos:
-  - repo: https://github.com/newblacc/reposec
+  - repo: https://github.com/newblacc/shipguard
     rev: main
     hooks:
-      - id: reposec
+      - id: shipguard
 ```
 
 ### GitHub Action
 
 ```yaml
-- uses: celstnblacc/reposec@main
+- uses: newblacc/shipguard@main
   with:
     severity: medium
     format: terminal
@@ -268,10 +268,49 @@ repos:
 ### Generic CI
 
 ```bash
-pip install reposec
-reposec scan . --severity high --format json
+pip install shipguard
+shipguard scan . --severity high --format json
 # Exit code 1 if findings exist, 0 if clean
 ```
+
+## Release Runbook (PyPI Trusted Publishing)
+
+Use this checklist for each release:
+
+1. Prepare version + changelog
+- Update package version and append the release notes in `CHANGELOG.md`.
+
+2. Confirm GitHub workflow + environment
+- Workflow file: `.github/workflows/publish.yml`
+- Required workflow name: `publish.yml`
+- Required job environment: `pypi`
+- Workflow publishes on tag pushes matching `v*`.
+
+3. Configure PyPI trusted publisher (one-time or when repo changes)
+- URL: `https://pypi.org/manage/project/shipguard/settings/publishing/`
+- Owner: `newblacc`
+- Repository: `shipguard`
+- Workflow: `publish.yml`
+- Environment: `pypi`
+
+4. Create and push release tag
+```bash
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+5. If publish failed before OIDC setup
+- Open GitHub Actions and re-run the failed `publish.yml` run for the same tag after trusted publisher configuration is saved.
+
+6. Post-publish smoke test
+```bash
+python -m pip install -U shipguard
+shipguard --version
+shipguard scan . --severity high
+```
+
+7. Verify release
+- Confirm the new version is visible on PyPI and installable in a clean environment.
 
 ## Exit Codes
 
@@ -286,29 +325,29 @@ Both `#` and `//` comment styles are supported:
 
 ```python
 # Python / Shell
-eval(expr)  # reposec:ignore PY-003
+eval(expr)  # shipguard:ignore PY-003
 ```
 
 ```javascript
 // JavaScript
-eval(code);  // reposec:ignore JS-001
+eval(code);  // shipguard:ignore JS-001
 ```
 
 ```bash
 # Shell
-eval $cmd  # reposec:ignore SHELL-001
+eval $cmd  # shipguard:ignore SHELL-001
 ```
 
 Suppress multiple rules:
 ```bash
-eval $cmd  # reposec:ignore SHELL-001, SHELL-002
+eval $cmd  # shipguard:ignore SHELL-001, SHELL-002
 ```
 
 ## About This Project
 
-RepoSec implements a **7-layer unified security framework** integrated into a single SAST tool. It was developed to package 40 security vulnerability patterns discovered during real-world audits of the [spec-kit](https://github.com/celstnblacc/spec-kit) and [superpowers](https://github.com/celstnblacc/superpowers) projects.
+ShipGuard implements a **7-layer unified security framework** integrated into a single SAST tool. It was developed to package 40 security vulnerability patterns discovered during real-world audits of the [spec-kit](https://github.com/celstnblacc/spec-kit) and [superpowers](https://github.com/celstnblacc/superpowers) projects.
 
-RepoSec provides:
+ShipGuard provides:
 - **Layer 3 (SAST)**: 34 rules across command injection, path traversal, code injection, and configuration issues
 - **Layer 2 (Secrets)**: 3 rules detecting cloud provider credentials (AWS, GCP, GitHub)
 - **Layer 6 (Supply Chain)**: 3 rules checking Docker image pinning and dependency versions
@@ -332,11 +371,11 @@ If you get import errors, ensure you're in the correct environment:
 
 ```bash
 # For pipx installations
-pipx list  # Should show reposec
+pipx list  # Should show shipguard
 
 # For venv installations
 source .venv/bin/activate
-which reposec  # Should show venv path
+which shipguard  # Should show venv path
 ```
 
 ### Pre-commit hook not running
@@ -353,8 +392,8 @@ pre-commit run --all-files  # Test manually
 To contribute or modify rules:
 
 ```bash
-git clone https://github.com/newblacc/reposec.git
-cd reposec
+git clone https://github.com/newblacc/shipguard.git
+cd shipguard
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
@@ -363,14 +402,14 @@ pip install -e ".[dev]"
 pytest tests/ -v
 
 # Test the CLI
-reposec scan tests/fixtures/
+shipguard scan tests/fixtures/
 ```
 
-New rules should be added to `src/reposec/rules/` with the `@register` decorator:
+New rules should be added to `src/shipguard/rules/` with the `@register` decorator:
 
 ```python
-from reposec.models import Finding, Severity
-from reposec.rules import register
+from shipguard.models import Finding, Severity
+from shipguard.rules import register
 
 @register(
     id="RULE-001",

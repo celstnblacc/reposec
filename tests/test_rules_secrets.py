@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from reposec.models import Severity
-from reposec.rules.secrets import (
+from shipguard.models import Severity
+from shipguard.rules.secrets import (
     _skip_false_positive,
     sec_001_aws_key,
     sec_002_gcp_key,

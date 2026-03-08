@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from reposec.models import Severity
-from reposec.rules import _registry, get_rules_for_file, load_custom_rules, register
+from shipguard.models import Severity
+from shipguard.rules import _registry, get_rules_for_file, load_custom_rules, register
 
 
 def test_get_rules_for_file_matches_named_pattern_without_dot():
@@ -35,8 +35,8 @@ def test_load_custom_rules_skips_already_loaded_module(tmp_path):
     f = rule_dir / "rule_a.py"
     f.write_text(
         """
-from reposec.models import Severity
-from reposec.rules import register
+from shipguard.models import Severity
+from shipguard.rules import register
 
 @register(
     id="CUST-DUP-1",
