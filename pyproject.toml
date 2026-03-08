@@ -29,11 +29,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/celstnblacc/reposec"
-Repository = "https://github.com/celstnblacc/reposec"
-Changelog = "https://github.com/celstnblacc/reposec/blob/main/CHANGELOG.md"
-"Bug Tracker" = "https://github.com/celstnblacc/reposec/issues"
-"Security Policy" = "https://github.com/celstnblacc/reposec/blob/main/SECURITY.md"
+Homepage = "https://github.com/newblacc/reposec"
+Repository = "https://github.com/newblacc/reposec"
+Changelog = "https://github.com/newblacc/reposec/blob/main/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/newblacc/reposec/issues"
+"Security Policy" = "https://github.com/newblacc/reposec/blob/main/SECURITY.md"
 
 [project.scripts]
 reposec = "reposec.cli:app"

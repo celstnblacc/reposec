@@ -13,7 +13,7 @@ Please **do not** open a public GitHub issue for security vulnerabilities.
 
 Report vulnerabilities privately via one of:
 
-- **GitHub private reporting**: [Security Advisories](https://github.com/celstnblacc/reposec/security/advisories/new)
+- **GitHub private reporting**: [Security Advisories](https://github.com/newblacc/reposec/security/advisories/new)
 - **Email**: security@devopscelstn.com *(replace with real address before publishing)*
 
 ### What to include

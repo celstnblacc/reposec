@@ -13,7 +13,7 @@ python -m pip install reposec
 ### Recommended: Using pipx (CLI tool)
 
 ```bash
-pipx install git+https://github.com/celstnblacc/reposec.git
+pipx install git+https://github.com/newblacc/reposec.git
 ```
 
 This installs RepoSec in an isolated environment with global command access.
@@ -21,7 +21,7 @@ This installs RepoSec in an isolated environment with global command access.
 ### From source (development)
 
 ```bash
-git clone https://github.com/celstnblacc/reposec.git
+git clone https://github.com/newblacc/reposec.git
 cd reposec
 python -m venv .venv
 source .venv/bin/activate
@@ -31,20 +31,20 @@ pip install -e ".[dev]"
 ### In a project (virtual environment)
 
 ```bash
-python3.12 -m venv .venv && source .venv/bin/activate && pip install "git+https://github.com/celstnblacc/reposec.git"
+python3.12 -m venv .venv && source .venv/bin/activate && pip install "git+https://github.com/newblacc/reposec.git"
 ```
 
 ### Install from GitHub (correct URL syntax)
 
 ```bash
-pip install "git+https://github.com/celstnblacc/reposec.git"
+pip install "git+https://github.com/newblacc/reposec.git"
 ```
 
 You can pin to a branch/tag/commit:
 
 ```bash
-pip install "git+https://github.com/celstnblacc/reposec.git@main"
-pip install "git+https://github.com/celstnblacc/reposec.git@efbd130"
+pip install "git+https://github.com/newblacc/reposec.git@main"
+pip install "git+https://github.com/newblacc/reposec.git@efbd130"
 ```
 
 After install:
@@ -250,7 +250,7 @@ eval $cmd  # reposec:ignore SHELL-001, SHELL-002
 ```yaml
 # .pre-commit-config.yaml
 repos:
-  - repo: https://github.com/celstnblacc/reposec
+  - repo: https://github.com/newblacc/reposec
     rev: main
     hooks:
       - id: reposec
@@ -353,7 +353,7 @@ pre-commit run --all-files  # Test manually
 To contribute or modify rules:
 
 ```bash
-git clone https://github.com/celstnblacc/reposec.git
+git clone https://github.com/newblacc/reposec.git
 cd reposec
 python -m venv .venv
 source .venv/bin/activate
