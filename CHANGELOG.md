@@ -46,4 +46,4 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - Added a Release Runbook section in `README.md` for PyPI trusted publishing (OIDC), tag flow, rerun guidance, and smoke-test verification.
-- Updated GitHub Action usage example from `celstnblacc/shipguard@main` to `newblacc/shipguard@main`.
+- Updated GitHub Action usage example from `celstnblacc/shipguard@main` to `celstnblacc/shipguard@main`.

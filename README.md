@@ -13,7 +13,7 @@ python -m pip install shipguard
 ### Recommended: Using pipx (CLI tool)
 
 ```bash
-pipx install git+https://github.com/newblacc/shipguard.git
+pipx install git+https://github.com/celstnblacc/shipguard.git
 ```
 
 This installs ShipGuard in an isolated environment with global command access.
@@ -21,7 +21,7 @@ This installs ShipGuard in an isolated environment with global command access.
 ### From source (development)
 
 ```bash
-git clone https://github.com/newblacc/shipguard.git
+git clone https://github.com/celstnblacc/shipguard.git
 cd shipguard
 python -m venv .venv
 source .venv/bin/activate
@@ -31,20 +31,20 @@ pip install -e ".[dev]"
 ### In a project (virtual environment)
 
 ```bash
-python3.12 -m venv .venv && source .venv/bin/activate && pip install "git+https://github.com/newblacc/shipguard.git"
+python3.12 -m venv .venv && source .venv/bin/activate && pip install "git+https://github.com/celstnblacc/shipguard.git"
 ```
 
 ### Install from GitHub (correct URL syntax)
 
 ```bash
-pip install "git+https://github.com/newblacc/shipguard.git"
+pip install "git+https://github.com/celstnblacc/shipguard.git"
 ```
 
 You can pin to a branch/tag/commit:
 
 ```bash
-pip install "git+https://github.com/newblacc/shipguard.git@main"
-pip install "git+https://github.com/newblacc/shipguard.git@efbd130"
+pip install "git+https://github.com/celstnblacc/shipguard.git@main"
+pip install "git+https://github.com/celstnblacc/shipguard.git@efbd130"
 ```
 
 After install:
@@ -250,7 +250,7 @@ eval $cmd  # shipguard:ignore SHELL-001, SHELL-002
 ```yaml
 # .pre-commit-config.yaml
 repos:
-  - repo: https://github.com/newblacc/shipguard
+  - repo: https://github.com/celstnblacc/shipguard
     rev: main
     hooks:
       - id: shipguard
@@ -259,7 +259,7 @@ repos:
 ### GitHub Action
 
 ```yaml
-- uses: newblacc/shipguard@main
+- uses: celstnblacc/shipguard@main
   with:
     severity: medium
     format: terminal
@@ -392,7 +392,7 @@ pre-commit run --all-files  # Test manually
 To contribute or modify rules:
 
 ```bash
-git clone https://github.com/newblacc/shipguard.git
+git clone https://github.com/celstnblacc/shipguard.git
 cd shipguard
 python -m venv .venv
 source .venv/bin/activate

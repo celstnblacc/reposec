@@ -29,11 +29,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/newblacc/shipguard"
-Repository = "https://github.com/newblacc/shipguard"
-Changelog = "https://github.com/newblacc/shipguard/blob/main/CHANGELOG.md"
-"Bug Tracker" = "https://github.com/newblacc/shipguard/issues"
-"Security Policy" = "https://github.com/newblacc/shipguard/blob/main/SECURITY.md"
+Homepage = "https://github.com/celstnblacc/shipguard"
+Repository = "https://github.com/celstnblacc/shipguard"
+Changelog = "https://github.com/celstnblacc/shipguard/blob/main/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/celstnblacc/shipguard/issues"
+"Security Policy" = "https://github.com/celstnblacc/shipguard/blob/main/SECURITY.md"
 
 [project.scripts]
 shipguard = "shipguard.cli:app"
