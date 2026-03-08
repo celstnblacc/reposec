@@ -43,3 +43,5 @@ rust/**/target/
 # Local docs scratch files (keep repo docs focused)
 docs/SAAS_ARCHITECTURE.md
 docs/IMPLEMENTATION_SUMMARY.md
+
+!.env.staging.example

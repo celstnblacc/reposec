@@ -15,7 +15,6 @@ jobs:
   layer-1-python-deps:
     name: Layer 1 - Python Dependencies
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
@@ -29,7 +28,7 @@ jobs:
 
       - name: Run pip-audit for Python dependencies
         if: hashFiles('requirements*.txt', 'pyproject.toml') != ''
-        run: pip-audit --skip-editable || true
+        run: pip-audit --skip-editable
 
   # Layer 1: Dependencies - Detect vulnerable JavaScript packages
   layer-1-js-deps:
@@ -38,7 +37,6 @@ jobs:
     if: >
       hashFiles('package.json', 'package-lock.json', 'pnpm-lock.yaml',
       'yarn.lock') != ''
-    continue-on-error: true
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
@@ -49,19 +47,18 @@ jobs:
 
       - name: Run npm audit
         if: hashFiles('package-lock.json') != ''
-        run: npm audit --audit-level=moderate || true
+        run: npm audit --audit-level=moderate
 
       - name: Run pnpm audit
         if: hashFiles('pnpm-lock.yaml') != ''
         run: |
           corepack enable
-          pnpm audit || true
+          pnpm audit
 
   # Layer 2: Secrets - Detect hardcoded credentials
   layer-2-secrets-gitleaks:
     name: Layer 2 - Detect Secrets (Gitleaks)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
@@ -71,13 +68,10 @@ jobs:
         uses: gitleaks/gitleaks-action@e6dab246340401bf53eec993b8f05aebe80ac636 # v2.3.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
   # Layer 2: Secrets - RepoSec layer 2 specific rules
   layer-2-secrets-reposec:
-    name: Layer 2 - Secrets (RepoSec)
+    name: Layer 2 - Secrets (RepoSec Report)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
@@ -89,20 +83,18 @@ jobs:
       - name: Install RepoSec
         run: pip install -e .
 
-      - name: Run RepoSec for Secrets (Layer 2)
+      - name: Run RepoSec for Secrets (Layer 2, report only)
         run: |
           reposec scan . --severity critical \
             --rules SEC-001,SEC-002,SEC-003 \
-            --format json > layer2-report.json || true
-        continue-on-error: true
-
+            --format json > layer2-report.json
       - name: Upload Layer 2 Report
         uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: layer2-secrets-report
           path: layer2-report.json
 
-  # Layer 3: SAST - Static Application Security Testing
+  # Layer 3: SAST - Static Application Security Testing (blocking: critical + high)
   layer-3-sast:
     name: Layer 3 - SAST (RepoSec)
     runs-on: ubuntu-latest
@@ -119,17 +111,15 @@ jobs:
 
       - name: Run RepoSec Full Scan (Layer 3)
         run: reposec scan . --format json > layer3-report.json
-        continue-on-error: true
-
-      - name: Check for Critical Findings
+      - name: Check for Blocking Findings (Critical + High)
         run: |
           CRITICAL=$(grep -o '"severity":"critical"' layer3-report.json | wc -l)
-          if [ "$CRITICAL" -gt 0 ]; then
-            echo "Found $CRITICAL critical findings"
+          HIGH=$(grep -o '"severity":"high"' layer3-report.json | wc -l)
+          BLOCKERS=$((CRITICAL + HIGH))
+          if [ "$BLOCKERS" -gt 0 ]; then
+            echo "Found $BLOCKERS blocking findings (critical=$CRITICAL, high=$HIGH)"
             exit 1
           fi
-        continue-on-error: true
-
       - name: Upload Layer 3 Report
         uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
@@ -152,24 +142,20 @@ jobs:
               repo: context.repo.repo,
               body: '🤖 **Layer 4: AI Reasoning** - Please conduct a manual security review, considering:\n- Authorization/authentication logic\n- Business logic vulnerabilities\n- Architectural patterns\n- Data handling and privacy\n\nUse an AI tool (Claude, GPT-4, etc.) or human architect for comprehensive review.'
             })
-        continue-on-error: true
-
   # Layer 5: DAST - Dynamic Application Security Testing
   layer-5-dast:
     name: Layer 5 - DAST (OWASP ZAP)
     runs-on: ubuntu-latest
     if: vars.PREVIEW_URL != ''
-    continue-on-error: true
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Run OWASP ZAP Baseline Scan
         run: |
-          docker run -t owasp/zap2docker-stable:latest \
+          docker run -t owasp/zap2docker-stable:2.15.0 \
             zap-baseline.py \
             -t "${{ vars.PREVIEW_URL }}" \
             -r layer5-zap-report.html \
-            || true
 
       - name: Upload Layer 5 Report
         uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
@@ -194,17 +180,11 @@ jobs:
         run: pip install -e .
 
       - name: Check for Unpinned Docker Images
-        run: reposec scan . --rules SC-001 --format json > layer6-docker-report.json || true
-        continue-on-error: true
-
+        run: reposec scan . --rules SC-001 --format json > layer6-docker-report.json
       - name: Check for Unpinned Python Dependencies
-        run: reposec scan . --rules SC-002 --format json > layer6-python-deps-report.json || true
-        continue-on-error: true
-
+        run: reposec scan . --rules SC-002 --format json > layer6-python-deps-report.json
       - name: Check for npm/pnpm without Lockfile
-        run: reposec scan . --rules SC-003 --format json > layer6-npm-lockfile-report.json || true
-        continue-on-error: true
-
+        run: reposec scan . --rules SC-003 --format json > layer6-npm-lockfile-report.json
       - name: Verify Lockfiles
         run: |
           if [ -f "requirements.txt" ]; then
@@ -213,8 +193,6 @@ jobs:
           if [ -f "package-lock.json" ] || [ -f "pnpm-lock.yaml" ]; then
             echo "✓ JavaScript lockfile present"
           fi
-        continue-on-error: true
-
       - name: Upload Layer 6 Reports
         uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
@@ -236,8 +214,6 @@ jobs:
           echo "- SIEM integration"
           echo "- Incident response runbooks"
           echo "- Post-incident analysis process"
-        continue-on-error: true
-
   # Summary Job
   security-summary:
     name: Security Pipeline Summary
@@ -261,4 +237,3 @@ jobs:
           echo "✅ Layer 6: Supply Chain - Checked"
           echo "✅ Layer 7: Observability - Reminder sent"
           echo "================================"
-        continue-on-error: true

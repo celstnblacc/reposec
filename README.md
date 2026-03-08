@@ -97,6 +97,24 @@ reposec init
 reposec init /path/to/target-repo
 ```
 
+## Development Staging Bootstrap (Go-Live)
+
+Use the helper script to create a local staging target for `go-live`/`infra-probe` verification:
+
+```bash
+# Build + start local staging and wait for health
+./scripts/go_live_staging.sh up
+
+# Show status
+./scripts/go_live_staging.sh status
+
+# Tear down cleanly
+./scripts/go_live_staging.sh down
+```
+
+This workflow uses `docker-compose.staging.yml` and `.env.staging` (auto-copied from `.env.staging.example` if missing).
+
+
 ## 7-Layer Security Pipeline
 
 RepoSec implements a **unified security model** across all 7 layers of the software development lifecycle:
