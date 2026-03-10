@@ -179,7 +179,7 @@ release:
 	  *) echo "ERROR: BUMP must be patch, minor, or major"; exit 1 ;; \
 	esac; \
 	echo "Bumping $$CURRENT → $$NEW"; \
-	PYTHONPATH=src python3 -m pytest tests/ -q || { echo "Tests failed — aborting release"; exit 1; }; \
+	PYBIN=$$([ -f .venv/bin/python ] && echo .venv/bin/python || echo python3); PYTHONPATH=src $$PYBIN -m pytest tests/ -q || { echo "Tests failed — aborting release"; exit 1; }; \
 	sed -i.bak "s/^version = \".*\"/version = \"$$NEW\"/" pyproject.toml && rm pyproject.toml.bak; \
 	git add pyproject.toml; \
 	git commit -m "chore(release): bump version $$CURRENT → $$NEW"; \
