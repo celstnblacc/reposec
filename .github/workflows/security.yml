@@ -15,12 +15,11 @@ jobs:
   layer-1-python-deps:
     name: Layer 1 - Python Dependencies
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -29,104 +28,105 @@ jobs:
 
       - name: Run pip-audit for Python dependencies
         if: hashFiles('requirements*.txt', 'pyproject.toml') != ''
-        run: pip-audit --skip-editable || true
+        run: pip-audit --skip-editable
 
   # Layer 1: Dependencies - Detect vulnerable JavaScript packages
   layer-1-js-deps:
     name: Layer 1 - JavaScript Dependencies
     runs-on: ubuntu-latest
-    if: hashFiles('package.json', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock') != ''
-    continue-on-error: true
+    if: >
+      hashFiles('package.json', 'package-lock.json', 'pnpm-lock.yaml',
+      'yarn.lock') != ''
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 'lts/*'
 
       - name: Run npm audit
         if: hashFiles('package-lock.json') != ''
-        run: npm audit --audit-level=moderate || true
+        run: npm audit --audit-level=moderate
 
       - name: Run pnpm audit
         if: hashFiles('pnpm-lock.yaml') != ''
         run: |
-          npm install -g pnpm
-          pnpm audit || true
+          corepack enable
+          pnpm audit
 
   # Layer 2: Secrets - Detect hardcoded credentials
   layer-2-secrets-gitleaks:
     name: Layer 2 - Detect Secrets (Gitleaks)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           fetch-depth: 0
 
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2.3.4
+        uses: gitleaks/gitleaks-action@e6dab246340401bf53eec993b8f05aebe80ac636 # v2.3.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-  # Layer 2: Secrets - RepoSec layer 2 specific rules
-  layer-2-secrets-reposec:
-    name: Layer 2 - Secrets (RepoSec)
+  # Layer 2: Secrets - ShipGuard layer 2 specific rules
+  layer-2-secrets-shipguard:
+    name: Layer 2 - Secrets (ShipGuard Report)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
-      - name: Install RepoSec
+      - name: Install ShipGuard
         run: pip install -e .
 
-      - name: Run RepoSec for Secrets (Layer 2)
-        run: reposec scan . --severity critical --rules SEC-001,SEC-002,SEC-003 --format json > layer2-report.json || true
-        continue-on-error: true
-
+      - name: Run ShipGuard for Secrets (Layer 2, blocking)
+        run: |
+          shipguard scan . --severity critical \
+            --rules SEC-001,SEC-002,SEC-003,SEC-004,SEC-005,SEC-006,SEC-007,SEC-008,SEC-009,SEC-010 \
+            --format json > layer2-report.json
+          CRITICAL=$(python3 -c "import json; d=json.load(open('layer2-report.json')); print(sum(1 for f in d.get('findings',[]) if f['severity']=='critical'))")
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "⛔ $CRITICAL critical secret(s) detected — commit blocked"
+            exit 1
+          fi
       - name: Upload Layer 2 Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: layer2-secrets-report
           path: layer2-report.json
 
-  # Layer 3: SAST - Static Application Security Testing
+  # Layer 3: SAST - Static Application Security Testing (blocking: critical + high)
   layer-3-sast:
-    name: Layer 3 - SAST (RepoSec)
+    name: Layer 3 - SAST (ShipGuard)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
-      - name: Install RepoSec
+      - name: Install ShipGuard
         run: pip install -e .
 
-      - name: Run RepoSec Full Scan (Layer 3)
-        run: reposec scan . --format json > layer3-report.json
-        continue-on-error: true
-
-      - name: Check for Critical Findings
+      - name: Run ShipGuard Full Scan (Layer 3)
+        run: shipguard scan . --format json > layer3-report.json
+      - name: Check for Blocking Findings (Critical + High)
         run: |
           CRITICAL=$(grep -o '"severity":"critical"' layer3-report.json | wc -l)
-          if [ "$CRITICAL" -gt 0 ]; then
-            echo "Found $CRITICAL critical findings"
+          HIGH=$(grep -o '"severity":"high"' layer3-report.json | wc -l)
+          BLOCKERS=$((CRITICAL + HIGH))
+          if [ "$BLOCKERS" -gt 0 ]; then
+            echo "Found $BLOCKERS blocking findings (critical=$CRITICAL, high=$HIGH)"
             exit 1
           fi
-        continue-on-error: true
-
       - name: Upload Layer 3 Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: layer3-sast-report
           path: layer3-report.json
@@ -138,7 +138,7 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Post PR Comment about AI Review
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             github.rest.issues.createComment({
@@ -147,27 +147,23 @@ jobs:
               repo: context.repo.repo,
               body: '🤖 **Layer 4: AI Reasoning** - Please conduct a manual security review, considering:\n- Authorization/authentication logic\n- Business logic vulnerabilities\n- Architectural patterns\n- Data handling and privacy\n\nUse an AI tool (Claude, GPT-4, etc.) or human architect for comprehensive review.'
             })
-        continue-on-error: true
-
   # Layer 5: DAST - Dynamic Application Security Testing
   layer-5-dast:
     name: Layer 5 - DAST (OWASP ZAP)
     runs-on: ubuntu-latest
     if: vars.PREVIEW_URL != ''
-    continue-on-error: true
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Run OWASP ZAP Baseline Scan
         run: |
-          docker run -t owasp/zap2docker-stable:latest \
+          docker run -t owasp/zap2docker-stable:2.15.0 \
             zap-baseline.py \
             -t "${{ vars.PREVIEW_URL }}" \
             -r layer5-zap-report.html \
-            || true
 
       - name: Upload Layer 5 Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: layer5-dast-report
           path: layer5-zap-report.html
@@ -178,28 +174,24 @@ jobs:
     name: Layer 6 - Supply Chain Integrity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
-      - name: Install RepoSec
+      - name: Install ShipGuard
         run: pip install -e .
 
       - name: Check for Unpinned Docker Images
-        run: reposec scan . --rules SC-001 --format json > layer6-docker-report.json || true
-        continue-on-error: true
-
+        run: shipguard scan . --rules SC-001 --format json > layer6-docker-report.json
       - name: Check for Unpinned Python Dependencies
-        run: reposec scan . --rules SC-002 --format json > layer6-python-deps-report.json || true
-        continue-on-error: true
-
+        run: shipguard scan . --rules SC-002 --format json > layer6-python-deps-report.json
       - name: Check for npm/pnpm without Lockfile
-        run: reposec scan . --rules SC-003 --format json > layer6-npm-lockfile-report.json || true
-        continue-on-error: true
-
+        run: shipguard scan . --rules SC-003 --format json > layer6-npm-lockfile-report.json
+      - name: Check .gitignore for missing secret entries
+        run: shipguard scan . --rules SC-004 --format json > layer6-gitignore-report.json
       - name: Verify Lockfiles
         run: |
           if [ -f "requirements.txt" ]; then
@@ -208,13 +200,12 @@ jobs:
           if [ -f "package-lock.json" ] || [ -f "pnpm-lock.yaml" ]; then
             echo "✓ JavaScript lockfile present"
           fi
-        continue-on-error: true
-
       - name: Upload Layer 6 Reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: layer6-supply-chain-reports
           path: layer6-*-report.json
+          if: always()
 
   # Layer 7: Observability - Comment reminder for monitoring setup
   layer-7-observability:
@@ -231,17 +222,15 @@ jobs:
           echo "- SIEM integration"
           echo "- Incident response runbooks"
           echo "- Post-incident analysis process"
-        continue-on-error: true
-
   # Summary Job
   security-summary:
     name: Security Pipeline Summary
     runs-on: ubuntu-latest
-    needs: [layer-3-sast, layer-6-supply-chain]
+    needs: [layer-1-python-deps, layer-2-secrets-gitleaks, layer-2-secrets-shipguard, layer-3-sast, layer-6-supply-chain]
     if: always()
     steps:
       - name: Download all reports
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
 
       - name: Print Security Summary
         run: |
@@ -256,4 +245,3 @@ jobs:
           echo "✅ Layer 6: Supply Chain - Checked"
           echo "✅ Layer 7: Observability - Reminder sent"
           echo "================================"
-        continue-on-error: true
