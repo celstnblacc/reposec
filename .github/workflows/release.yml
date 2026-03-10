@@ -1,0 +1,96 @@
+---
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options: [patch, minor, major]
+      dry_run:
+        description: 'Dry run — compute version and run tests but skip commit/tag/push'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    name: Bump version, tag, and publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # push version-bump commit and tag to main
+
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          fetch-depth: 0
+          # Use a PAT or the default GITHUB_TOKEN.
+          # GITHUB_TOKEN can push commits but cannot trigger downstream workflows
+          # (publish.yml) on tag push in the same run.
+          # If publish.yml doesn't fire, set RELEASE_TOKEN to a PAT with repo scope.
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run full test suite
+        run: PYTHONPATH=src pytest tests/ -q
+
+      - name: Compute new version
+        id: version
+        run: |
+          CURRENT=$(python3 -c "
+          import tomllib
+          with open('pyproject.toml', 'rb') as f:
+              print(tomllib.load(f)['project']['version'])
+          ")
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          case "${{ inputs.bump }}" in
+            major) NEW="$((MAJOR + 1)).0.0" ;;
+            minor) NEW="${MAJOR}.$((MINOR + 1)).0" ;;
+            patch) NEW="${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
+          esac
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "new=$NEW"         >> "$GITHUB_OUTPUT"
+          echo "tag=v${NEW}"      >> "$GITHUB_OUTPUT"
+
+      - name: Show release plan
+        run: |
+          echo "================================================"
+          echo "  Release plan"
+          echo "  bump type : ${{ inputs.bump }}"
+          echo "  current   : ${{ steps.version.outputs.current }}"
+          echo "  new       : ${{ steps.version.outputs.new }}"
+          echo "  tag       : ${{ steps.version.outputs.tag }}"
+          echo "  dry run   : ${{ inputs.dry_run }}"
+          echo "================================================"
+
+      - name: Bump version in pyproject.toml
+        run: |
+          sed -i 's/^version = ".*"/version = "${{ steps.version.outputs.new }}"/' pyproject.toml
+          grep '^version' pyproject.toml  # sanity-check
+
+      - name: Commit, tag, and push
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "chore(release): bump version ${{ steps.version.outputs.current }} → ${{ steps.version.outputs.new }}"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin HEAD:main
+          git push origin "${{ steps.version.outputs.tag }}"
+          echo "✅ Pushed tag ${{ steps.version.outputs.tag }} — publish.yml will now build and upload to PyPI"
+
+      - name: Dry-run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "DRY RUN complete — no commit, tag, or push performed."
+          echo "Would have released: ${{ steps.version.outputs.current }} → ${{ steps.version.outputs.new }}"

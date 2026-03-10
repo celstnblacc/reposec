@@ -83,11 +83,16 @@ jobs:
       - name: Install ShipGuard
         run: pip install -e .
 
-      - name: Run ShipGuard for Secrets (Layer 2, report only)
+      - name: Run ShipGuard for Secrets (Layer 2, blocking)
         run: |
           shipguard scan . --severity critical \
-            --rules SEC-001,SEC-002,SEC-003 \
+            --rules SEC-001,SEC-002,SEC-003,SEC-004,SEC-005,SEC-006,SEC-007,SEC-008,SEC-009,SEC-010 \
             --format json > layer2-report.json
+          CRITICAL=$(python3 -c "import json; d=json.load(open('layer2-report.json')); print(sum(1 for f in d.get('findings',[]) if f['severity']=='critical'))")
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "⛔ $CRITICAL critical secret(s) detected — commit blocked"
+            exit 1
+          fi
       - name: Upload Layer 2 Report
         uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
@@ -185,6 +190,8 @@ jobs:
         run: shipguard scan . --rules SC-002 --format json > layer6-python-deps-report.json
       - name: Check for npm/pnpm without Lockfile
         run: shipguard scan . --rules SC-003 --format json > layer6-npm-lockfile-report.json
+      - name: Check .gitignore for missing secret entries
+        run: shipguard scan . --rules SC-004 --format json > layer6-gitignore-report.json
       - name: Verify Lockfiles
         run: |
           if [ -f "requirements.txt" ]; then
@@ -198,6 +205,7 @@ jobs:
         with:
           name: layer6-supply-chain-reports
           path: layer6-*-report.json
+          if: always()
 
   # Layer 7: Observability - Comment reminder for monitoring setup
   layer-7-observability:
@@ -218,7 +226,7 @@ jobs:
   security-summary:
     name: Security Pipeline Summary
     runs-on: ubuntu-latest
-    needs: [layer-3-sast, layer-6-supply-chain]
+    needs: [layer-1-python-deps, layer-2-secrets-gitleaks, layer-2-secrets-shipguard, layer-3-sast, layer-6-supply-chain]
     if: always()
     steps:
       - name: Download all reports

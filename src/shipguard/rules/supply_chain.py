@@ -126,3 +126,43 @@ def sc_003_npm_frozen_lockfile(
                 )
             )
     return findings
+
+
+# Required .gitignore entries that guard against secret commits
+_REQUIRED_GITIGNORE_ENTRIES = [".env", "*.key", "*.pem", "*.p12", "*.pfx"]
+
+
+@register(
+    id="SC-004",
+    name="missing-gitignore-secret-entries",
+    severity=Severity.HIGH,
+    description="Detects .gitignore files missing baseline entries that protect against committing secrets",
+    extensions=[".gitignore"],
+    cwe_id="CWE-312",
+)
+def sc_004_missing_gitignore_entries(
+    file_path: Path, content: str, config: object = None
+) -> list[Finding]:
+    findings: list[Finding] = []
+    if file_path.name != ".gitignore":
+        return findings
+
+    existing = set(content.splitlines())
+    missing = [
+        entry for entry in _REQUIRED_GITIGNORE_ENTRIES
+        if not any(entry in line for line in existing)
+    ]
+    if missing:
+        findings.append(
+            Finding(
+                rule_id="SC-004",
+                severity=Severity.HIGH,
+                file_path=file_path,
+                line_number=1,
+                line_content=f"Missing entries: {', '.join(missing)}",
+                message=f".gitignore is missing secret-protection entries: {', '.join(missing)}",
+                cwe_id="CWE-312",
+                fix_hint=f"Add the following to .gitignore: {chr(10).join(missing)}",
+            )
+        )
+    return findings
