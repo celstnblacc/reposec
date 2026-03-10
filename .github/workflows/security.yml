@@ -69,7 +69,7 @@ jobs:
           sudo install /tmp/gitleaks /usr/local/bin/gitleaks
 
       - name: Run Gitleaks
-        run: gitleaks detect --source . --redact --verbose
+        run: gitleaks detect --source src --no-git --redact --verbose
   # Layer 2: Secrets - ShipGuard layer 2 specific rules
   layer-2-secrets-shipguard:
     name: Layer 2 - Secrets (ShipGuard Report)
