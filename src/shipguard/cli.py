@@ -24,6 +24,13 @@ app = typer.Typer(
 console = Console()
 
 
+def _parse_rule_csv(raw: Optional[str]) -> set[str]:
+    """Parse comma-separated rule IDs."""
+    if not raw:
+        return set()
+    return {item.strip().upper() for item in raw.split(",") if item.strip()}
+
+
 def version_callback(value: bool) -> None:
     if value:
         console.print(f"shipguard {__version__}")
@@ -63,6 +70,16 @@ def scan_cmd(
         "--rust-secrets/--no-rust-secrets",
         help="Use optional Rust-accelerated secrets scanning for SEC-* rules.",
     ),
+    include_rules: Optional[str] = typer.Option(
+        None,
+        "--include-rules",
+        help="Comma-separated rule IDs to include (e.g., PY-003,SEC-001).",
+    ),
+    exclude_rules: Optional[str] = typer.Option(
+        None,
+        "--exclude-rules",
+        help="Comma-separated rule IDs to exclude.",
+    ),
 ) -> None:
     """Scan a directory for security vulnerabilities."""
     format = format.lower()
@@ -78,7 +95,26 @@ def scan_cmd(
             console.print(f"[red]Invalid severity: {severity}[/red]")
             raise typer.Exit(code=1)
 
-    result = scan(target_dir=path, config=config, severity_threshold=threshold)
+    include_rule_ids = _parse_rule_csv(include_rules)
+    exclude_rule_ids = _parse_rule_csv(exclude_rules)
+
+    # Validate rule IDs against loaded registry.
+    load_builtin_rules()
+    known_ids = set(get_registry().keys())
+    unknown_ids = sorted((include_rule_ids | exclude_rule_ids) - known_ids)
+    if unknown_ids:
+        console.print(
+            f"[red]Unknown rule ID(s): {', '.join(unknown_ids)}[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    result = scan(
+        target_dir=path,
+        config=config,
+        severity_threshold=threshold,
+        include_rules=include_rule_ids,
+        exclude_rules=exclude_rule_ids,
+    )
 
     try:
         formatter = get_formatter(format)

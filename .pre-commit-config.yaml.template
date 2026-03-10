@@ -25,12 +25,12 @@ repos:
         stages: [commit]
         pass_filenames: false
 
-  # RepoSec - Layer 2 specific rules (Secrets)
+  # ShipGuard - Layer 2 specific rules (Secrets)
   - repo: local
     hooks:
-      - id: reposec-secrets
-        name: Detect secrets (reposec)
-        entry: reposec scan --severity critical --rules SEC-001,SEC-002,SEC-003
+      - id: shipguard-secrets
+        name: Detect secrets (shipguard)
+        entry: shipguard scan . --severity critical --include-rules SEC-001,SEC-002,SEC-003,SEC-004,SEC-005,SEC-006,SEC-007,SEC-008,SEC-009,SEC-010 --format terminal
         language: system
         types: [text]
         stages: [commit]
@@ -38,12 +38,12 @@ repos:
 
   # ===== Layer 3: SAST (Static Application Security Testing) =====
 
-  # RepoSec - Full SAST scanning
+  # ShipGuard - Full SAST scanning
   - repo: local
     hooks:
-      - id: reposec
-        name: RepoSec SAST
-        entry: reposec scan . --config .reposec-precommit.yml
+      - id: shipguard
+        name: ShipGuard SAST
+        entry: shipguard scan . --config .shipguard-precommit.yml
         language: system
         types: [text]
         stages: [commit]
@@ -81,12 +81,12 @@ repos:
 
   # ===== Layer 6: Supply Chain Integrity =====
 
-  # RepoSec - Layer 6 specific rules (Supply Chain)
+  # ShipGuard - Layer 6 specific rules (Supply Chain)
   - repo: local
     hooks:
-      - id: reposec-supply-chain
-        name: Supply chain integrity (reposec)
-        entry: reposec scan --rules SC-001,SC-002,SC-003
+      - id: shipguard-supply-chain
+        name: Supply chain integrity (shipguard)
+        entry: shipguard scan . --include-rules SC-001,SC-002,SC-003,SC-004 --format terminal
         language: system
         types: [text]
         stages: [commit]
@@ -139,8 +139,8 @@ repos:
 # 1. All security tools are pinned to specific revisions (not `main` or `latest`)
 #    to ensure reproducible behavior
 #
-# 2. RepoSec hooks use local repository configuration
-#    (assuming reposec is installed locally via `pip install -e .`)
+# 2. ShipGuard hooks use local repository configuration
+#    (assuming shipguard is installed locally via `pip install -e .`)
 #
 # 3. Most hooks run on commit stage; some could be moved to commit-msg or push stages
 #    Adjust stages: [commit, push] as needed

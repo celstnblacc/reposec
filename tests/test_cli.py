@@ -71,6 +71,35 @@ class TestScanCommand:
         result = runner.invoke(app, ["scan", str(FIXTURES), "--rust-secrets", "--format", "json"])
         assert result.exit_code == 1
 
+    def test_scan_include_rules_filters_findings(self):
+        result = runner.invoke(
+            app,
+            ["scan", str(FIXTURES), "--include-rules", "PY-003", "--format", "json"],
+        )
+        assert result.exit_code == 1
+        import json
+        data = json.loads(result.output)
+        assert data["summary"]["total"] >= 1
+        assert {f["rule_id"] for f in data["findings"]} == {"PY-003"}
+
+    def test_scan_exclude_rules_filters_findings(self):
+        result = runner.invoke(
+            app,
+            ["scan", str(FIXTURES), "--exclude-rules", "PY-003", "--format", "json"],
+        )
+        assert result.exit_code == 1
+        import json
+        data = json.loads(result.output)
+        assert "PY-003" not in {f["rule_id"] for f in data["findings"]}
+
+    def test_scan_rejects_unknown_rule_filter(self):
+        result = runner.invoke(
+            app,
+            ["scan", str(FIXTURES), "--include-rules", "NOPE-999", "--format", "json"],
+        )
+        assert result.exit_code == 1
+        assert "Unknown rule ID" in result.output
+
 
 class TestListRulesCommand:
     def test_list_rules_terminal(self):

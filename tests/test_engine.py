@@ -125,6 +125,25 @@ def custom_rule(file_path, content, config=None):
         assert len(py_005) == 1
         assert len(shell_009) == 0
 
+    def test_scan_with_include_rules(self):
+        fixtures = Path(__file__).parent / "fixtures"
+        result = scan(
+            fixtures,
+            severity_threshold=Severity.LOW,
+            include_rules={"PY-003"},
+        )
+        assert len(result.findings) >= 1
+        assert {f.rule_id for f in result.findings} == {"PY-003"}
+
+    def test_scan_with_exclude_rules(self):
+        fixtures = Path(__file__).parent / "fixtures"
+        result = scan(
+            fixtures,
+            severity_threshold=Severity.LOW,
+            exclude_rules={"PY-003"},
+        )
+        assert "PY-003" not in {f.rule_id for f in result.findings}
+
     def test_scan_uses_rust_secrets_when_enabled(self, tmp_path, monkeypatch):
         p = tmp_path / "secrets.yml"
         p.write_text("aws_key: AKIA1234567890ABCDEF\n")

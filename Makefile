@@ -1,11 +1,12 @@
-.PHONY: help security security-l1 security-l2 security-l3 security-l4 security-l5 security-l6 security-l7 release
+.PHONY: help security security-report security-strict security-l1 security-l2 security-l3 security-l4 security-l5 security-l6 security-l7 release
 
 help:
 	@echo "7-Layer Security Pipeline - Local Execution"
 	@echo "==========================================="
 	@echo ""
 	@echo "Run all layers:"
-	@echo "  make security          - Run layers 1, 2, 3, and 6 locally"
+	@echo "  make security          - Run layers 1, 2, 3, and 6 locally (report mode)"
+	@echo "  make security-strict   - Run blocking ShipGuard checks (fail on findings)"
 	@echo ""
 	@echo "Run individual layers:"
 	@echo "  make security-l1       - Layer 1: Check dependency vulnerabilities"
@@ -58,7 +59,7 @@ security-l2:
 	fi
 	@echo ""
 	@echo "Running ShipGuard for secrets rules (SEC-001 through SEC-010)..."
-	@shipguard scan . --severity critical --rules SEC-001,SEC-002,SEC-003,SEC-004,SEC-005,SEC-006,SEC-007,SEC-008,SEC-009,SEC-010 --format text || true
+	@shipguard scan . --severity critical --include-rules SEC-001,SEC-002,SEC-003,SEC-004,SEC-005,SEC-006,SEC-007,SEC-008,SEC-009,SEC-010 --format terminal || true
 	@echo ""
 	@echo "✅ Layer 2 complete"
 
@@ -110,16 +111,16 @@ security-l6:
 	@echo "🔒 Layer 6: Supply Chain Integrity Checks..."
 	@echo ""
 	@echo "Checking for unpinned Docker images (SC-001)..."
-	@shipguard scan . --rules SC-001 --format text || true
+	@shipguard scan . --include-rules SC-001 --format terminal || true
 	@echo ""
 	@echo "Checking for unpinned Python dependencies (SC-002)..."
-	@shipguard scan . --rules SC-002 --format text || true
+	@shipguard scan . --include-rules SC-002 --format terminal || true
 	@echo ""
 	@echo "Checking for npm/pnpm without lockfile (SC-003)..."
-	@shipguard scan . --rules SC-003 --format text || true
+	@shipguard scan . --include-rules SC-003 --format terminal || true
 	@echo ""
 	@echo "Checking .gitignore for missing secret entries (SC-004)..."
-	@shipguard scan . --rules SC-004 --format text || true
+	@shipguard scan . --include-rules SC-004 --format terminal || true
 	@echo ""
 	@echo "Verifying lockfiles..."
 	@if [ -f "requirements.txt" ]; then echo "  ✓ requirements.txt found"; fi
@@ -149,7 +150,7 @@ security-l7:
 	@echo ""
 	@echo "✅ Layer 7 reminder complete"
 
-# Combined: Run layers 1, 2, 3, and 6 locally
+# Combined: Run layers 1, 2, 3, and 6 locally (report mode; non-blocking external tools)
 security: security-l1 security-l2 security-l3 security-l6
 	@echo ""
 	@echo "================================"
@@ -163,6 +164,17 @@ security: security-l1 security-l2 security-l3 security-l6
 	@echo "✅ Layer 6: Supply Chain - Complete"
 	@echo "⏭️  Layer 7: Observability - Production monitoring needed"
 	@echo "================================"
+
+# Explicit alias for report mode
+security-report: security
+
+# Strict mode: blocking checks suitable for CI/release gates
+security-strict:
+	@echo "🔒 ShipGuard Strict Gate (blocking)"
+	@echo ""
+	@shipguard scan . --severity high
+	@echo ""
+	@echo "✅ Strict gate complete"
 
 # Release: bump version, commit, tag, push → triggers publish.yml → PyPI
 # Usage: make release BUMP=patch   (or minor / major)

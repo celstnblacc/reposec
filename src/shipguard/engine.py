@@ -70,7 +70,11 @@ def _get_suppressed_rules(content: str, line_number: int) -> set[str]:
 
 
 def _scan_file(
-    file_path: Path, config: Config, severity_threshold: Severity
+    file_path: Path,
+    config: Config,
+    severity_threshold: Severity,
+    include_rules: set[str],
+    excluded_rules: set[str],
 ) -> list[Finding]:
     """Scan a single file with all applicable rules."""
     try:
@@ -83,7 +87,9 @@ def _scan_file(
 
     seen_line_rules: dict[int, set[str]] = {}
     for rule in rules:
-        if rule.id in (config.disable_rules or []):
+        if include_rules and rule.id not in include_rules:
+            continue
+        if rule.id in excluded_rules:
             continue
         if config.use_rust_secrets and rule.id.startswith("SEC-"):
             continue
@@ -116,6 +122,8 @@ def scan(
     config: Config | None = None,
     severity_threshold: Severity | None = None,
     max_workers: int = 4,
+    include_rules: set[str] | None = None,
+    exclude_rules: set[str] | None = None,
 ) -> ScanResult:
     """Scan a directory for security vulnerabilities.
 
@@ -140,19 +148,27 @@ def scan(
 
     threshold = severity_threshold or Severity(config.severity_threshold)
     result = ScanResult()
+    include_rule_ids = include_rules or set()
+    excluded_rule_ids = set(config.disable_rules or []) | set(exclude_rules or set())
 
     files = _discover_files(target_dir, config)
     result.files_scanned = len(files)
 
     from shipguard.rules import get_registry
 
-    result.rules_applied = len(get_registry())
+    registry_ids = set(get_registry().keys())
+    if include_rule_ids:
+        registry_ids &= include_rule_ids
+    registry_ids -= excluded_rule_ids
+    result.rules_applied = len(registry_ids)
 
     all_findings: list[Finding] = []
     if config.use_rust_secrets:
         rust_findings = run_rust_secrets_scan(files, target_dir)
         for finding in rust_findings:
-            if finding.rule_id in (config.disable_rules or []):
+            if include_rule_ids and finding.rule_id not in include_rule_ids:
+                continue
+            if finding.rule_id in excluded_rule_ids:
                 continue
             if finding.severity < threshold:
                 continue
@@ -166,7 +182,14 @@ def scan(
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = {
-            pool.submit(_scan_file, f, config, threshold): f for f in files
+            pool.submit(
+                _scan_file,
+                f,
+                config,
+                threshold,
+                include_rule_ids,
+                excluded_rule_ids,
+            ): f for f in files
         }
         for future in as_completed(futures):
             try:

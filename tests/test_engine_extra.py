@@ -29,7 +29,7 @@ def test_scan_file_handles_read_error(tmp_path, monkeypatch):
     p.write_text("print(1)\n")
 
     monkeypatch.setattr(Path, "read_text", lambda *a, **k: (_ for _ in ()).throw(OSError("denied")))
-    findings = _scan_file(p, Config(), Severity.LOW)
+    findings = _scan_file(p, Config(), Severity.LOW, set(), set())
     assert findings == []
 
 
@@ -45,7 +45,7 @@ def test_scan_file_skips_rule_without_func(tmp_path, monkeypatch):
         func=None,
     )
     monkeypatch.setattr("shipguard.engine.get_rules_for_file", lambda _: [nofunc])
-    findings = _scan_file(p, Config(), Severity.LOW)
+    findings = _scan_file(p, Config(), Severity.LOW, set(), set())
     assert findings == []
 
 
@@ -74,7 +74,7 @@ def test_scan_file_respects_inline_suppression(tmp_path, monkeypatch):
         func=_func,
     )
     monkeypatch.setattr("shipguard.engine.get_rules_for_file", lambda _: [meta])
-    findings = _scan_file(p, Config(), Severity.LOW)
+    findings = _scan_file(p, Config(), Severity.LOW, set(), set())
     assert findings == []
 
 
