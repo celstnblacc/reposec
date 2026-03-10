@@ -84,12 +84,15 @@ class TestListRulesCommand:
         assert result.exit_code == 0
         import json
         rules = json.loads(result.output)
-        assert len(rules) == 40
+        assert len(rules) == 48
         ids = {r["id"] for r in rules}
         assert "SHELL-001" in ids
         assert "CFG-003" in ids
         assert "SEC-001" in ids
+        assert "SEC-004" in ids
+        assert "SEC-010" in ids
         assert "SC-001" in ids
+        assert "SC-004" in ids
 
     def test_list_rules_invalid_format(self):
         result = runner.invoke(app, ["list-rules", "--format", "bogus"])

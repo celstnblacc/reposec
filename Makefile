@@ -1,4 +1,4 @@
-.PHONY: help security security-l1 security-l2 security-l3 security-l4 security-l5 security-l6 security-l7
+.PHONY: help security security-l1 security-l2 security-l3 security-l4 security-l5 security-l6 security-l7 release
 
 help:
 	@echo "7-Layer Security Pipeline - Local Execution"
@@ -18,6 +18,7 @@ help:
 	@echo ""
 	@echo "Other targets:"
 	@echo "  make install           - Install development dependencies"
+	@echo "  make release BUMP=patch|minor|major - Bump version, tag, and push to trigger PyPI publish"
 	@echo "  make help              - Show this help message"
 
 # Layer 1: Dependencies - Check for vulnerable packages
@@ -56,8 +57,8 @@ security-l2:
 		echo "⚠️  gitleaks not found. Install with: brew install gitleaks"; \
 	fi
 	@echo ""
-	@echo "Running ShipGuard for secrets rules (SEC-001, SEC-002, SEC-003)..."
-	@shipguard scan . --severity critical --rules SEC-001,SEC-002,SEC-003 --format text || true
+	@echo "Running ShipGuard for secrets rules (SEC-001 through SEC-010)..."
+	@shipguard scan . --severity critical --rules SEC-001,SEC-002,SEC-003,SEC-004,SEC-005,SEC-006,SEC-007,SEC-008,SEC-009,SEC-010 --format text || true
 	@echo ""
 	@echo "✅ Layer 2 complete"
 
@@ -117,6 +118,9 @@ security-l6:
 	@echo "Checking for npm/pnpm without lockfile (SC-003)..."
 	@shipguard scan . --rules SC-003 --format text || true
 	@echo ""
+	@echo "Checking .gitignore for missing secret entries (SC-004)..."
+	@shipguard scan . --rules SC-004 --format text || true
+	@echo ""
 	@echo "Verifying lockfiles..."
 	@if [ -f "requirements.txt" ]; then echo "  ✓ requirements.txt found"; fi
 	@if [ -f "requirements-dev.txt" ]; then echo "  ✓ requirements-dev.txt found"; fi
@@ -159,6 +163,30 @@ security: security-l1 security-l2 security-l3 security-l6
 	@echo "✅ Layer 6: Supply Chain - Complete"
 	@echo "⏭️  Layer 7: Observability - Production monitoring needed"
 	@echo "================================"
+
+# Release: bump version, commit, tag, push → triggers publish.yml → PyPI
+# Usage: make release BUMP=patch   (or minor / major)
+BUMP ?= patch
+release:
+	@command -v python3 >/dev/null 2>&1 || { echo "ERROR: python3 required"; exit 1; }
+	@git diff --quiet && git diff --cached --quiet || { echo "ERROR: working tree is dirty — commit or stash first"; exit 1; }
+	@CURRENT=$$(python3 -c "import tomllib; f=open('pyproject.toml','rb'); d=tomllib.load(f); print(d['project']['version'])"); \
+	IFS='.' read -r MAJ MIN PAT <<< "$$CURRENT"; \
+	case "$(BUMP)" in \
+	  major) NEW="$$((MAJ+1)).0.0" ;; \
+	  minor) NEW="$${MAJ}.$$((MIN+1)).0" ;; \
+	  patch) NEW="$${MAJ}.$${MIN}.$$((PAT+1))" ;; \
+	  *) echo "ERROR: BUMP must be patch, minor, or major"; exit 1 ;; \
+	esac; \
+	echo "Bumping $$CURRENT → $$NEW"; \
+	PYTHONPATH=src python3 -m pytest tests/ -q || { echo "Tests failed — aborting release"; exit 1; }; \
+	sed -i.bak "s/^version = \".*\"/version = \"$$NEW\"/" pyproject.toml && rm pyproject.toml.bak; \
+	git add pyproject.toml; \
+	git commit -m "chore(release): bump version $$CURRENT → $$NEW"; \
+	git tag "v$$NEW"; \
+	git push origin HEAD; \
+	git push origin "v$$NEW"; \
+	echo "✅ Released v$$NEW — publish.yml will build and upload to PyPI"
 
 # Install development dependencies
 install:

@@ -40,6 +40,10 @@ rust/**/target/
 .env
 .env.*
 !.env.example
+*.key
+*.pem
+*.p12
+*.pfx
 
 # Local docs scratch files (keep repo docs focused)
 docs/SAAS_ARCHITECTURE.md
