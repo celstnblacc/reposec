@@ -2,13 +2,13 @@
 
 ## Project Description
 
-**ShipGuard** is a Python-based SAST (Static Application Security Testing) tool that implements a unified 7-layer security framework. It scans repositories for 40 security vulnerability patterns across Shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files.
+**ShipGuard** is a Python-based SAST (Static Application Security Testing) tool that implements a unified 7-layer security framework. It scans repositories for 48 security vulnerability patterns across Shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files.
 
 **Key Features:**
-- 40 built-in security rules across 7 layers
+- 48 built-in security rules across 7 layers
 - Layer 3 (SAST): 34 core rules
-- Layer 2 (Secrets): 3 credential detection rules
-- Layer 6 (Supply Chain): 3 integrity checks
+- Layer 2 (Secrets): 10 credential/token detection rules
+- Layer 6 (Supply Chain): 4 integrity checks
 - CLI tool for scanning repositories
 - Pre-commit hook integration
 - GitHub Action integration
@@ -103,7 +103,7 @@ shipguard/
 │   │   └── supply_chain.py         # SC rules (NEW)
 │   └── formatters/                 # Output formatters
 │       ├── terminal.py
-│       ├── json.py
+│       ├── json_fmt.py
 │       └── markdown.py
 ├── tests/                          # Test suite
 │   ├── conftest.py                 # Pytest configuration
@@ -213,6 +213,7 @@ def rule_function(file_path: Path, content: str, config=None) -> list[Finding]:
 
 ```bash
 make security         # Runs L1, L2, L3, L6
+make security-strict  # Blocking ShipGuard gate (fails on high+ findings)
 make security-l3      # Full SAST scan
 make help             # See all available targets
 ```
@@ -244,8 +245,8 @@ shipguard scan tests/fixtures/ --severity critical
 ### Before Committing
 
 1. **Run tests**: `pytest tests/ -v` — All tests must pass
-2. **Check syntax**: `python -m py_compile src/shipguard/**/*.py`
-3. **Review rule counts**: `shipguard list-rules | wc -l` should match test expectations
+2. **Check syntax**: `python -m compileall src/shipguard`
+3. **Review rule counts**: `shipguard list-rules --format json | python -c "import json,sys; print(len(json.load(sys.stdin)))"` should match test expectations
 4. **Verify no hardcoded secrets**: `grep -r "password\|api_key\|secret" src/ | grep -v "test\|example"`
 5. **Update documentation** if adding/changing rules
 
@@ -254,9 +255,9 @@ shipguard scan tests/fixtures/ --severity critical
 ⚠️ **Important:** This is a security scanner tool. Test fixtures intentionally contain vulnerable code to verify ShipGuard detects security issues correctly.
 
 **Test fixtures contain:**
-- Unsafe `eval()` statements (PY-001)
+- Unsafe `eval()` statements (PY-003)
 - Insecure YAML loading (PY-002)
-- Path traversal vulnerabilities (PY-003)
+- Path traversal vulnerabilities (PY-001, PY-004)
 - Unsafe shell `eval` (SHELL-001)
 - Unsafe eval in JavaScript (JS-001)
 - Untrusted data in GitHub Actions (GHA-001)

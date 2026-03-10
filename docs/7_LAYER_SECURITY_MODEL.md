@@ -11,8 +11,8 @@ The 7-layer security model segments security activities across the SDLC:
 | Layer | Focus | Stage | Primary Tools |
 |-------|-------|-------|---|
 | **1. Dependencies** | Vulnerable libraries | Package selection | pip-audit, npm audit, osv-scanner |
-| **2. Secrets** | Credential exposure | Code commit | gitleaks, reposec, pre-commit hooks |
-| **3. SAST** | Code vulnerabilities | Development | Linters, pattern matching (reposec) |
+| **2. Secrets** | Credential exposure | Code commit | gitleaks, shipguard, pre-commit hooks |
+| **3. SAST** | Code vulnerabilities | Development | Linters, pattern matching (shipguard) |
 | **4. AI Reasoning** | Semantic/business logic | Code review | LLMs, human architects |
 | **5. DAST** | Runtime vulnerabilities | Testing/Pre-prod | OWASP ZAP, Burp Suite, fuzzing |
 | **6. Supply Chain** | Build integrity | CI/CD | Pinned images, lockfile checks |
@@ -69,7 +69,7 @@ gitleaks detect --source=local --verbose
 ```
 
 **B. Pattern Scanning:**
-Use tools like `reposec` to scan for common secret patterns:
+Use tools like `shipguard` to scan for common secret patterns:
 - AWS Access Key IDs (AKIA*)
 - GCP API Keys (AIza*)
 - GitHub Personal Access Tokens (ghp_*, gho_*, etc.)
@@ -122,16 +122,18 @@ Scan `.env`, `.yml`, JSON configs for secret-like values.
 
 ### Implementation:
 
-**RepoSec provides 34 built-in rules:**
+**ShipGuard provides 48 built-in rules:**
 - 9 Shell script checks (SHELL-001 to SHELL-009)
 - 9 Python checks (PY-001 to PY-009)
 - 8 JavaScript checks (JS-001 to JS-008)
 - 5 GitHub Actions checks (GHA-001 to GHA-005)
 - 3 Configuration checks (CFG-001 to CFG-003)
+- 10 Secrets checks (SEC-001 to SEC-010)
+- 4 Supply chain checks (SC-001 to SC-004)
 
 ```bash
-reposec scan .  # Run all rules
-reposec scan . --severity critical  # Run critical rules only
+shipguard scan .  # Run all rules
+shipguard scan . --severity critical  # Run critical rules only
 ```
 
 ### Best Practices:
@@ -261,13 +263,14 @@ npm install --frozen-lockfile
 npm ci  # Clean install in CI/CD
 ```
 
-### RepoSec Rules:
+### ShipGuard Rules:
 - **SC-001:** Docker images with `:latest` tag
 - **SC-002:** Python dependencies without version pins
 - **SC-003:** npm/pnpm install without `--frozen-lockfile` or `--ci`
+- **SC-004:** Missing baseline secret file patterns in `.gitignore`
 
 ```bash
-reposec scan . --rules SC-001,SC-002,SC-003
+shipguard scan . --include-rules SC-001,SC-002,SC-003,SC-004
 ```
 
 ### Best Practices:
@@ -332,7 +335,7 @@ reposec scan . --rules SC-001,SC-002,SC-003
 └────┬────────┘
      │ Pre-commit hooks (Layer 2, 3)
      ├─ gitleaks (L2: secrets)
-     ├─ reposec scan (L2 & L3: secrets & SAST)
+     ├─ shipguard scan (L2 & L3: secrets & SAST)
      ↓
 ┌─────────────┐
 │ Code Review │
@@ -402,10 +405,10 @@ reposec scan . --rules SC-001,SC-002,SC-003
 - pip-audit, npm audit, osv-scanner, Snyk
 
 ### Layer 2 (Secrets):
-- gitleaks, TruffleHog, detect-secrets, reposec
+- gitleaks, TruffleHog, detect-secrets, shipguard
 
 ### Layer 3 (SAST):
-- RepoSec, Bandit (Python), ESLint (JavaScript), ShellCheck (Shell)
+- ShipGuard, Bandit (Python), ESLint (JavaScript), ShellCheck (Shell)
 
 ### Layer 4 (AI Reasoning):
 - Claude, GPT-4, Codeium, GitHub Copilot
@@ -425,4 +428,4 @@ reposec scan . --rules SC-001,SC-002,SC-003
 
 ## Conclusion
 
-The 7-layer model ensures **defense in depth** across the entire SDLC. No single tool or layer is sufficient; all 7 must work together to create a truly secure development pipeline. Start with Layers 1-3 (which RepoSec directly supports), and progressively add Layers 4-7 as your security maturity grows.
+The 7-layer model ensures **defense in depth** across the entire SDLC. No single tool or layer is sufficient; all 7 must work together to create a truly secure development pipeline. Start with Layers 1-3 and 6 (which ShipGuard directly supports), and progressively add Layers 4-5 and 7 as your security maturity grows.

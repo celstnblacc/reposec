@@ -43,3 +43,29 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Test suite: 217 functions across 27 files
 - Golden snapshot regression tests
 - Concurrent scanning support
+
+---
+
+## [0.3.0] — 2026-03-10
+
+### Added
+- `scan` CLI flags for rule-level filtering:
+  - `--include-rules` (comma-separated rule IDs)
+  - `--exclude-rules` (comma-separated rule IDs)
+- Validation for unknown rule IDs in `--include-rules` / `--exclude-rules`.
+
+### Fixed
+- Version alignment across package metadata:
+  - `pyproject.toml` remains `0.3.0`
+  - `src/shipguard/__init__.py` updated to `0.3.0`
+- Makefile security targets now use supported CLI options and output formats:
+  - replaced unsupported `--rules` with `--include-rules`
+  - replaced unsupported `--format text` with `--format terminal`
+- `.pre-commit-config.yaml.template` updated from legacy `reposec` references to `shipguard`, including config filename and command examples.
+
+### Changed
+- Documentation alignment for current rule inventory:
+  - README updated from 40 → 48 total rules
+  - Layer and category counts updated (`SEC-001..010`, `SC-001..004`)
+  - Added README examples for `--include-rules` / `--exclude-rules`.
+- `IMPLEMENTATION_SUMMARY.md` verification guidance updated to expect 48 rules from `shipguard list-rules`.

@@ -127,12 +127,12 @@ All components of the 7-layer unified security pipeline have been successfully i
 
 ### Tests
 **File**: `tests/test_cli.py`
-- Updated `test_list_rules_json()` assertion: `34` → `40` rules
+- Updated `test_list_rules_json()` assertion: `34` → `48` rules
 - Added assertions for new rule IDs (SEC-001, SC-001)
 
 ### README
 **File**: `README.md`
-- Updated description: "34 vulnerability patterns" → "40 vulnerability patterns"
+- Updated description: "34 vulnerability patterns" → "48 vulnerability patterns"
 - Added 7-layer security pipeline section with reference table
 - Added quick start for complete pipeline
 - Updated "About This Project" to explain 7-layer integration
@@ -149,9 +149,9 @@ All components of the 7-layer unified security pipeline have been successfully i
 | JavaScript | L3 | 8 | 8 | JS-001–008 |
 | GitHub Actions | L3 | 5 | 5 | GHA-001–005 |
 | Config | L3 | 3 | 3 | CFG-001–003 |
-| Secrets | L2 | — | 3 | SEC-001–003 |
-| Supply Chain | L6 | — | 3 | SC-001–003 |
-| **TOTAL** | — | **34** | **40** | — |
+| Secrets | L2 | — | 10 | SEC-001–010 |
+| Supply Chain | L6 | — | 4 | SC-001–004 |
+| **TOTAL** | — | **34** | **48** | — |
 
 ---
 
@@ -196,7 +196,7 @@ README.md
 - ✅ Test fixtures created for all new rules
 - ✅ Unit tests cover normal cases, edge cases, and false positive handling
 - ✅ __init__.py updated to load new rule modules
-- ✅ test_cli.py updated for 40 total rules
+- ✅ test_cli.py updated for 48 total rules
 - ✅ README updated with 7-layer context
 - ✅ Documentation created (3 files)
 - ✅ CI/CD workflow created with all 7 layers
@@ -210,7 +210,7 @@ README.md
 
 ## Next Steps for Users
 
-1. **Verify installation**: `shipguard list-rules` should show 40 rules
+1. **Verify installation**: `shipguard list-rules` should show 48 rules
 2. **Run tests**: `pytest tests/test_rules_*.py -v` (once dev dependencies installed)
 3. **Test locally**: `make security` to run L1, L2, L3, L6
 4. **Enable CI/CD**: Push to trigger `.github/workflows/security.yml`

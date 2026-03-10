@@ -1,6 +1,6 @@
 # Test Expansion Plan
 
-This document captures the next wave of tests to implement for RepoSec.
+This document captures the next wave of tests to implement for ShipGuard.
 We will implement these one by one in the order listed.
 
 ## 1. Property-Based Tests (Implemented)
@@ -31,7 +31,7 @@ We will implement these one by one in the order listed.
 - Verify stable behavior under concurrent workload and partial worker failures.
 
 ## 7. Config Compatibility Tests (Implemented)
-- Validate `.reposec.yml` compatibility matrix:
+- Validate `.shipguard.yml` compatibility matrix:
   - missing keys
   - unknown keys
   - malformed YAML
@@ -53,29 +53,29 @@ We will implement these one by one in the order listed.
 Run all standard tests:
 
 ```bash
-PYTHONPATH=backend .venv/bin/pytest tests -q
+PYTHONPATH=src .venv/bin/pytest tests -q
 ```
 
 Run with coverage:
 
 ```bash
-PYTHONPATH=backend .venv/bin/pytest tests --cov=src/reposec --cov-report=term-missing -q
+PYTHONPATH=src .venv/bin/pytest tests --cov=src/shipguard --cov-report=term-missing -q
 ```
 
 Update golden snapshots:
 
 ```bash
-UPDATE_SNAPSHOTS=1 PYTHONPATH=backend .venv/bin/pytest tests/test_golden_snapshots.py -q
+UPDATE_SNAPSHOTS=1 PYTHONPATH=src .venv/bin/pytest tests/test_golden_snapshots.py -q
 ```
 
 Run performance tests:
 
 ```bash
-REPOSEC_RUN_PERF=1 PYTHONPATH=backend .venv/bin/pytest tests/test_performance_regression.py -q
+SHIPGUARD_RUN_PERF=1 PYTHONPATH=src .venv/bin/pytest tests/test_performance_regression.py -q
 ```
 
 Run mutation harness smoke:
 
 ```bash
-REPOSEC_RUN_MUTATION=1 PYTHONPATH=backend .venv/bin/pytest tests/test_mutation_harness.py -q
+SHIPGUARD_RUN_MUTATION=1 PYTHONPATH=src .venv/bin/pytest tests/test_mutation_harness.py -q
 ```

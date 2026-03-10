@@ -1,6 +1,6 @@
 # ShipGuard
 
-Reusable security audit tool for any repository. Scans shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files for **40 vulnerability patterns** across all 7 layers of a unified security pipeline.
+Reusable security audit tool for any repository. Scans shell scripts, Python, JavaScript/TypeScript, GitHub Actions workflows, and configuration files for **48 vulnerability patterns** across all 7 layers of a unified security pipeline.
 
 ## Install
 
@@ -54,6 +54,13 @@ shipguard --version
 shipguard scan .
 ```
 
+Verify you are using the expected binary:
+
+```bash
+which shipguard
+shipguard scan --help
+```
+
 If you open a new shell later:
 
 ```bash
@@ -87,8 +94,14 @@ shipguard scan /path/to/target-repo --severity high
 # Generate markdown report (for PR comments)
 shipguard scan . --format markdown --output report.md
 
-# List all 40 rules with descriptions
+# List all 48 rules with descriptions
 shipguard list-rules
+
+# Include only selected rules
+shipguard scan . --include-rules PY-003,SEC-001
+
+# Exclude noisy rules for a run
+shipguard scan . --exclude-rules JS-008,PY-009
 
 # Create a config file
 shipguard init
@@ -122,18 +135,18 @@ ShipGuard implements a **unified security model** across all 7 layers of the sof
 | Layer | Focus | ShipGuard Rules | External Tools |
 |-------|-------|---------------|---|
 | **L1: Dependencies** | Vulnerable packages | — | pip-audit, npm audit, osv-scanner |
-| **L2: Secrets** | Credential exposure | SEC-001–003 (3) | gitleaks, detect-secrets |
+| **L2: Secrets** | Credential exposure | SEC-001–010 (10) | gitleaks, detect-secrets |
 | **L3: SAST** | Code vulnerabilities | 34 rules | ShellCheck, Bandit, ESLint |
 | **L4: AI Reasoning** | Semantic analysis | — | Claude, GPT-4, human architects |
 | **L5: DAST** | Runtime vulnerabilities | — | OWASP ZAP, Burp Suite |
-| **L6: Supply Chain** | Build integrity | SC-001–003 (3) | Sigstore, Cosign |
+| **L6: Supply Chain** | Build integrity | SC-001–004 (4) | Sigstore, Cosign |
 | **L7: Observability** | Production monitoring | — | SIEM, Datadog, PagerDuty |
 
 **See [docs/PIPELINE.md](./docs/PIPELINE.md) for complete framework details.**
 
 ---
 
-## Rules (40 total)
+## Rules (48 total)
 
 | Category | Layer | Count | IDs | Examples |
 |----------|-------|-------|-----|----------|
@@ -142,8 +155,8 @@ ShipGuard implements a **unified security model** across all 7 layers of the sof
 | JavaScript | L3 | 8 | JS-001–008 | eval, path traversal, prototype pollution, XSS |
 | GitHub Actions | L3 | 5 | GHA-001–005 | workflow injection, unpinned actions, secrets in logs |
 | Config | L3 | 3 | CFG-001–003 | auto-approve, committed .env, permissive CORS |
-| **Secrets** | **L2** | **3** | **SEC-001–003** | **AWS keys, GCP tokens, GitHub PATs** |
-| **Supply Chain** | **L6** | **3** | **SC-001–003** | **Docker :latest, unpinned deps, npm lockfiles** |
+| **Secrets** | **L2** | **10** | **SEC-001–010** | **Cloud/API tokens and other hardcoded secret patterns** |
+| **Supply Chain** | **L6** | **4** | **SC-001–004** | **Docker :latest, unpinned deps, npm lockfiles, missing .gitignore entries** |
 
 Run `shipguard list-rules` or `shipguard list-rules --format json` for full details.
 
@@ -159,6 +172,9 @@ pip install pip-audit bandit shellcheck-py
 
 # Run all layers (1, 2, 3, 6 local; others require additional setup)
 make security
+
+# Run strict blocking gate (fails on high+ findings)
+make security-strict
 
 # Or run individual layers
 make security-l1   # Dependencies
@@ -345,12 +361,12 @@ eval $cmd  # shipguard:ignore SHELL-001, SHELL-002
 
 ## About This Project
 
-ShipGuard implements a **7-layer unified security framework** integrated into a single SAST tool. It was developed to package 40 security vulnerability patterns discovered during real-world audits of the [spec-kit](https://github.com/celstnblacc/spec-kit) and [superpowers](https://github.com/celstnblacc/superpowers) projects.
+ShipGuard implements a **7-layer unified security framework** integrated into a single SAST tool. It was developed to package 48 security vulnerability patterns discovered during real-world audits of the [spec-kit](https://github.com/celstnblacc/spec-kit) and [superpowers](https://github.com/celstnblacc/superpowers) projects.
 
 ShipGuard provides:
 - **Layer 3 (SAST)**: 34 rules across command injection, path traversal, code injection, and configuration issues
-- **Layer 2 (Secrets)**: 3 rules detecting cloud provider credentials (AWS, GCP, GitHub)
-- **Layer 6 (Supply Chain)**: 3 rules checking Docker image pinning and dependency versions
+- **Layer 2 (Secrets)**: 10 rules detecting cloud/API credentials and token patterns
+- **Layer 6 (Supply Chain)**: 4 rules checking Docker image pinning, dependency pinning, and `.gitignore` secret baselines
 - **Integration**: GitHub Actions workflow, pre-commit hooks, local Makefile targets
 
 **See [docs/7_LAYER_SECURITY_MODEL.md](./docs/7_LAYER_SECURITY_MODEL.md) for the complete security framework.**

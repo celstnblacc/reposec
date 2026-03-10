@@ -150,7 +150,7 @@
             transform: rotate(180deg);
         }
 
-        .reposec-coverage {
+        .shipguard-coverage {
             background: #fff3e0;
             border-left: 3px solid #FF8C42;
             padding: 10px 12px;
@@ -247,8 +247,8 @@
                 <div class="stat-label">Security Layers</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">40</div>
-                <div class="stat-label">RepoSec Rules</div>
+                <div class="stat-number">48</div>
+                <div class="stat-label">ShipGuard Rules</div>
             </div>
             <div class="stat-card">
                 <div class="stat-number">6</div>
@@ -279,7 +279,7 @@
                         <div class="tool">📋 Logging & Audit</div>
                     </div>
                     <span class="stage">Stage: Production</span>
-                    <div class="reposec-coverage">RepoSec: No direct coverage (runtime phase)</div>
+                    <div class="shipguard-coverage">ShipGuard: No direct coverage (runtime phase)</div>
                 </div>
             </div>
 
@@ -301,7 +301,7 @@
                         <div class="tool">🔍 Image scanning</div>
                     </div>
                     <span class="stage">Stage: CI/CD & Deployment</span>
-                    <div class="reposec-coverage">✅ RepoSec: SC-001 (Docker :latest), SC-002 (unpinned deps), SC-003 (npm lockfile)</div>
+                    <div class="shipguard-coverage">✅ ShipGuard: SC-001..SC-004 (Docker pinning, dependency pinning, lockfile safety, .gitignore baseline)</div>
                 </div>
             </div>
 
@@ -323,7 +323,7 @@
                         <div class="tool">🧪 Penetration testing</div>
                     </div>
                     <span class="stage">Stage: Testing/Staging</span>
-                    <div class="reposec-coverage">RepoSec: No direct coverage (requires running app)</div>
+                    <div class="shipguard-coverage">ShipGuard: No direct coverage (requires running app)</div>
                 </div>
             </div>
 
@@ -345,7 +345,7 @@
                         <div class="tool">🔐 Authorization review</div>
                     </div>
                     <span class="stage">Stage: Code Review</span>
-                    <div class="reposec-coverage">RepoSec: No direct coverage (manual process)</div>
+                    <div class="shipguard-coverage">ShipGuard: No direct coverage (manual process)</div>
                 </div>
             </div>
 
@@ -369,7 +369,7 @@
                         <div class="tool">🚫 Unsafe deserialization</div>
                     </div>
                     <span class="stage">Stage: Development</span>
-                    <div class="reposec-coverage">✅ RepoSec: 34 rules (SHELL-001-009, PY-001-009, JS-001-008, GHA-001-005, CFG-001-003)</div>
+                    <div class="shipguard-coverage">✅ ShipGuard: 34 SAST rules (SHELL-001-009, PY-001-009, JS-001-008, GHA-001-005, CFG-001-003)</div>
                 </div>
             </div>
 
@@ -391,7 +391,7 @@
                         <div class="tool">🔐 DB passwords</div>
                     </div>
                     <span class="stage">Stage: Git & Pre-commit</span>
-                    <div class="reposec-coverage">✅ RepoSec: SEC-001 (AWS), SEC-002 (GCP), SEC-003 (GitHub tokens)</div>
+                    <div class="shipguard-coverage">✅ ShipGuard: SEC-001..SEC-010 (cloud/API credential and token patterns)</div>
                 </div>
             </div>
 
@@ -413,25 +413,25 @@
                         <div class="tool">🛡️ Snyk</div>
                     </div>
                     <span class="stage">Stage: Package Selection</span>
-                    <div class="reposec-coverage">RepoSec: No direct coverage (use external tools)</div>
+                    <div class="shipguard-coverage">ShipGuard: No direct coverage (use external tools)</div>
                 </div>
             </div>
         </div>
 
         <div class="legend">
-            <h3>RepoSec Coverage</h3>
-            <p style="margin-bottom: 15px; color: #666;">RepoSec provides primary coverage for Layers 3, 2, and 6:</p>
+            <h3>ShipGuard Coverage</h3>
+            <p style="margin-bottom: 15px; color: #666;">ShipGuard provides primary coverage for Layers 3, 2, and 6:</p>
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #FFD93D;"></div>
                 <strong>Layer 3 (SAST):</strong> 34 rules across Shell, Python, JavaScript, GitHub Actions, and Config files
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #FF8C42;"></div>
-                <strong>Layer 2 (Secrets):</strong> 3 rules for AWS, GCP, and GitHub tokens
+                <strong>Layer 2 (Secrets):</strong> 10 rules (SEC-001..SEC-010) for cloud/API credentials and tokens
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #9D84B7;"></div>
-                <strong>Layer 6 (Supply Chain):</strong> 3 rules for Docker images, Python deps, and npm lockfiles
+                <strong>Layer 6 (Supply Chain):</strong> 4 rules (SC-001..SC-004) for Docker images, dependency pinning, lockfiles, and .gitignore baselines
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #ccc;"></div>

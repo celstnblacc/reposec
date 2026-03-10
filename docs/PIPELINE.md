@@ -1,6 +1,6 @@
 # 7-Layer Unified Security Pipeline
 
-A comprehensive security strategy requires defense at all layers. This document explains the 7-layer security model and how RepoSec fits into it.
+A comprehensive security strategy requires defense at all layers. This document explains the 7-layer security model and how ShipGuard fits into it.
 
 ## The 7 Layers
 
@@ -13,7 +13,7 @@ A comprehensive security strategy requires defense at all layers. This document 
 - `osv-scanner` — checks Open Source Vulnerabilities (OSV) database
 - Dependency locking — lock files (requirements.txt, package-lock.json, pnpm-lock.yaml)
 
-**RepoSec Coverage:** None (use external tools)
+**ShipGuard Coverage:** None (use external tools)
 
 ---
 
@@ -22,11 +22,11 @@ A comprehensive security strategy requires defense at all layers. This document 
 
 **Tools & Techniques:**
 - `gitleaks` — detects secrets in Git history
-- `reposec` (SEC rules) — detects cloud provider tokens (AWS, GCP, GitHub)
+- `shipguard` (SEC rules) — detects hardcoded cloud/API credentials and token patterns
 - `.env` file auditing — ensures sensitive files are gitignored
 - Pre-commit hooks — block commits with credential patterns
 
-**RepoSec Coverage:** SEC-001 (AWS keys), SEC-002 (GCP keys), SEC-003 (GitHub tokens)
+**ShipGuard Coverage:** SEC-001 to SEC-010 (cloud/API credentials and token patterns)
 
 ---
 
@@ -39,7 +39,7 @@ A comprehensive security strategy requires defense at all layers. This document 
 - Type checking and static analysis
 - Custom rules for organization-specific patterns
 
-**RepoSec Coverage:** 34 rules across Shell, Python, JavaScript, GitHub Actions, and Config files
+**ShipGuard Coverage:** 34 rules across Shell, Python, JavaScript, GitHub Actions, and Config files
 - SHELL-001 to SHELL-009
 - PY-001 to PY-009
 - JS-001 to JS-008
@@ -57,7 +57,7 @@ A comprehensive security strategy requires defense at all layers. This document 
 - Business logic analysis
 - Architecture and design pattern assessment
 
-**RepoSec Coverage:** None (manual, for human review process)
+**ShipGuard Coverage:** None (manual, for human review process)
 
 ---
 
@@ -70,7 +70,7 @@ A comprehensive security strategy requires defense at all layers. This document 
 - API fuzzing and endpoint testing
 - Authentication and session management testing
 
-**RepoSec Coverage:** None (requires running application)
+**ShipGuard Coverage:** None (requires running application)
 
 ---
 
@@ -84,7 +84,7 @@ A comprehensive security strategy requires defense at all layers. This document 
 - Container image scanning
 - SBOM (Software Bill of Materials) generation
 
-**RepoSec Coverage:** SC-001 (Docker :latest detection), SC-002 (unpinned Python deps), SC-003 (npm/pnpm without lockfile)
+**ShipGuard Coverage:** SC-001 to SC-004 (Docker pinning, dependency pinning, lockfile safety, .gitignore secret baseline)
 
 ---
 
@@ -98,22 +98,22 @@ A comprehensive security strategy requires defense at all layers. This document 
 - Incident response playbooks
 - Post-incident analysis
 
-**RepoSec Coverage:** None (runtime/deployment phase)
+**ShipGuard Coverage:** None (runtime/deployment phase)
 
 ---
 
-## RepoSec's Position
+## ShipGuard's Position
 
-RepoSec is a **Layer 3 SAST tool** with **complementary coverage** of Layers 2 and 6:
+ShipGuard is a **Layer 3 SAST tool** with **complementary coverage** of Layers 2 and 6:
 
 | Layer | Coverage | Rules |
 |-------|----------|-------|
 | L1 (Dependencies) | External tools only | — |
-| L2 (Secrets) | Partial (3 cloud provider patterns) | SEC-001, SEC-002, SEC-003 |
+| L2 (Secrets) | Partial (10 secret/token patterns) | SEC-001..SEC-010 |
 | L3 (SAST) | **PRIMARY** (34 patterns) | SHELL, PY, JS, GHA, CFG |
 | L4 (AI Reasoning) | External (manual review) | — |
 | L5 (DAST) | External tools only | — |
-| L6 (Supply Chain) | Partial (3 checks) | SC-001, SC-002, SC-003 |
+| L6 (Supply Chain) | Partial (4 checks) | SC-001..SC-004 |
 | L7 (Observability) | External (deployment) | — |
 
 ---
@@ -129,12 +129,12 @@ npm audit  # Node.js dependencies
 ### 2. Layer 2: Detect Secrets
 ```bash
 gitleaks detect --source=local --verbose
-reposec scan --severity critical  # Focus on secrets rules
+shipguard scan --severity critical  # Focus on secrets rules
 ```
 
 ### 3. Layer 3: Run Full SAST
 ```bash
-reposec scan  # All rules, all files
+shipguard scan  # All rules, all files
 ```
 
 ### 4. Layer 4: Manual AI Review
@@ -149,7 +149,7 @@ docker run -t owasp/zap2docker-stable zap-baseline.py -t http://localhost:8000
 
 ### 6. Layer 6: Supply Chain Checks
 ```bash
-reposec scan --rules SC-001,SC-002,SC-003
+shipguard scan --include-rules SC-001,SC-002,SC-003,SC-004
 # Also verify lockfiles are present and up-to-date
 ```
 
@@ -164,23 +164,23 @@ Use `.github/workflows/security.yml` to automate all 7 layers in GitHub Actions.
 
 Each layer runs as a separate job:
 - **L1:** `pip-audit` job
-- **L2:** `gitleaks` job + `reposec` (secrets rules)
-- **L3:** `reposec` job (full SAST)
+- **L2:** `gitleaks` job + `shipguard` (secrets rules)
+- **L3:** `shipguard` job (full SAST)
 - **L4:** Comment reminding of manual review
 - **L5:** Conditional ZAP scan (if `PREVIEW_URL` is set)
-- **L6:** Lockfile verification + `reposec` (supply chain rules)
+- **L6:** Lockfile verification + `shipguard` (supply chain rules)
 - **L7:** Comment with observability setup reminder
 
 ---
 
-## Extending RepoSec
+## Extending ShipGuard
 
-To add custom rules beyond the 34 built-in patterns:
+To add custom rules beyond the 48 built-in patterns:
 
 1. Create a new Python file in your rule directory:
    ```python
-   from reposec.models import Finding, Severity
-   from reposec.rules import register
+   from shipguard.models import Finding, Severity
+   from shipguard.rules import register
 
    @register(
        id="CUSTOM-001",
@@ -195,13 +195,13 @@ To add custom rules beyond the 34 built-in patterns:
        ...
    ```
 
-2. Register the directory in `.reposec.yml`:
+2. Register the directory in `.shipguard.yml`:
    ```yaml
-   custom_rules:
+   custom_rules_dirs:
      - ./custom_rules/
    ```
 
-3. Run: `reposec scan --rules CUSTOM-001`
+3. Run: `shipguard scan --include-rules CUSTOM-001`
 
 ---
 
@@ -209,6 +209,6 @@ To add custom rules beyond the 34 built-in patterns:
 
 - See `docs/7_LAYER_SECURITY_MODEL.md` for detailed framework explanation
 - See `docs/7_LAYER_SECURITY_MODEL.html` for interactive dashboard
-- See `README.md` for RepoSec rule reference
+- See `README.md` for ShipGuard rule reference
 - Review `.github/workflows/security.yml` for complete CI/CD pipeline
 - Review `Makefile` for local execution targets
