@@ -25,12 +25,12 @@ def py_001_zip_traversal(
 ) -> list[Finding]:
     findings: list[Finding] = []
     pattern = re.compile(r"\.extractall\s*\(")
-    for i, line in enumerate(content.splitlines(), 1):
+    lines = content.splitlines()
+    for i, line in enumerate(lines, 1):
         if line.strip().startswith("#"):
             continue
         if pattern.search(line) and "zipfile" in content.lower():
             # Check if there's member validation nearby (within 10 lines before)
-            lines = content.splitlines()
             start = max(0, i - 11)
             context = "\n".join(lines[start : i - 1])
             if not re.search(r"\.namelist\(\)|\.infolist\(\)|os\.path\..*\.\.", context):
@@ -132,9 +132,14 @@ def py_004_startswith_path(
     file_path: Path, content: str, config: object = None
 ) -> list[Finding]:
     findings: list[Finding] = []
-    # Detect patterns like: path.startswith("/some/dir") or str(path).startswith(
+    # Match path.startswith(, base_path.startswith(, my_dir.startswith(,
+    # str(p).startswith(, p.resolve().startswith(.
+    # Requires keyword to be bare (path, dir, file, folder) or preceded by
+    # a word-and-underscore prefix (base_path, upload_dir, log_file).
+    # Does NOT match profile/directory/direction because those have no
+    # underscore separator before the keyword.
     pattern = re.compile(
-        r"""(?:str\s*\(\s*\w+\s*\)|\.resolve\(\)|path\w*|dir\w*|file\w*|folder\w*)\.startswith\s*\(""",
+        r"""(?:str\s*\(\s*\w+\s*\)|(?:\w+\.)?resolve\s*\(\s*\)|\b(?:\w+_)?(?:path|dir|file|folder)s?)\.startswith\s*\(""",
         re.IGNORECASE,
     )
     for i, line in enumerate(content.splitlines(), 1):

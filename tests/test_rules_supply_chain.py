@@ -263,6 +263,14 @@ class TestSc004MissingGitignoreEntries:
         findings = sc_004_missing_gitignore_entries(path, content)
         assert len(findings) == 0
 
+    def test_sc_004_env_local_does_not_mask_dot_env(self):
+        """*.env.local must not be treated as covering .env — substring match false negative."""
+        content = "*.env.local\n*.key\n*.pem\n*.p12\n*.pfx"
+        path = Path(".gitignore")
+        findings = sc_004_missing_gitignore_entries(path, content)
+        assert len(findings) == 1
+        assert ".env" in findings[0].message
+
 
 class TestSc005MissingCosign:
     def test_sc_005_detects_docker_pull_without_cosign(self):

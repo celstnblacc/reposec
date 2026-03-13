@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+from shipguard import __version__ as _shipguard_version
 from shipguard.models import ScanResult, Severity
 
 _SARIF_SCHEMA = (
@@ -22,11 +23,6 @@ def _severity_to_level(severity: Severity) -> str:
 
 def format_sarif(result: ScanResult, **_kwargs) -> str:
     """Format scan results as SARIF 2.1.0 JSON."""
-    try:
-        from shipguard import __version__ as version
-    except Exception:
-        version = "unknown"
-
     # Build unique rules list from findings
     seen_rules: dict[str, str] = {}
     for finding in result.findings:
@@ -43,8 +39,17 @@ def format_sarif(result: ScanResult, **_kwargs) -> str:
         for rule_id, message in seen_rules.items()
     ]
 
+    scan_root = result.scan_root
+
     sarif_results = []
     for finding in result.findings:
+        if scan_root is not None:
+            try:
+                uri = finding.file_path.relative_to(scan_root).as_posix()
+            except ValueError:
+                uri = finding.file_path.as_posix()
+        else:
+            uri = finding.file_path.as_posix()
         sarif_results.append(
             {
                 "ruleId": finding.rule_id,
@@ -54,7 +59,7 @@ def format_sarif(result: ScanResult, **_kwargs) -> str:
                     {
                         "physicalLocation": {
                             "artifactLocation": {
-                                "uri": str(finding.file_path),
+                                "uri": uri,
                                 "uriBaseId": "%SRCROOT%",
                             },
                             "region": {
@@ -74,7 +79,7 @@ def format_sarif(result: ScanResult, **_kwargs) -> str:
                 "tool": {
                     "driver": {
                         "name": "shipguard",
-                        "version": version,
+                        "version": _shipguard_version,
                         "informationUri": "https://github.com/celstnblacc/shipguard",
                         "rules": sarif_rules,
                     }

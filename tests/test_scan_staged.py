@@ -17,6 +17,7 @@ class TestScanStagedCommand:
         """Exits with code 0 when no staged files."""
         mock_proc = MagicMock()
         mock_proc.stdout = ""
+        mock_proc.returncode = 0
 
         with patch("subprocess.run", return_value=mock_proc):
             result = runner.invoke(app, ["scan-staged", str(tmp_path)])
@@ -30,6 +31,7 @@ class TestScanStagedCommand:
 
         mock_proc = MagicMock()
         mock_proc.stdout = "safe.py\n"
+        mock_proc.returncode = 0
 
         with patch("subprocess.run", return_value=mock_proc):
             with patch("shipguard.cli.scan_files") as mock_scan_files:
@@ -47,6 +49,7 @@ class TestScanStagedCommand:
 
         mock_proc = MagicMock()
         mock_proc.stdout = "vuln.py\n"
+        mock_proc.returncode = 0
 
         with patch("subprocess.run", return_value=mock_proc):
             with patch("shipguard.cli.scan_files") as mock_scan_files:
@@ -72,6 +75,7 @@ class TestScanStagedCommand:
         mock_proc = MagicMock()
         # One existing file, one deleted (not on disk)
         mock_proc.stdout = "deleted_file.py\n"
+        mock_proc.returncode = 0
 
         with patch("subprocess.run", return_value=mock_proc):
             with patch("shipguard.cli.scan_files") as mock_scan_files:
@@ -88,6 +92,7 @@ class TestScanStagedCommand:
         """JSON format is accepted and produces valid output."""
         mock_proc = MagicMock()
         mock_proc.stdout = ""
+        mock_proc.returncode = 0
 
         with patch("subprocess.run", return_value=mock_proc):
             result = runner.invoke(

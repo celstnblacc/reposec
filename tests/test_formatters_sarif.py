@@ -126,3 +126,40 @@ class TestSarifFormat:
         result = _make_result(_make_finding())
         data = json.loads(format_sarif(result))
         assert "shipguard" in data["runs"][0]["tool"]["driver"]["informationUri"]
+
+    def test_uri_is_relative_when_scan_root_set(self, tmp_path):
+        """File paths must be relative to scan_root so GitHub can link them."""
+        abs_file = tmp_path / "src" / "app.py"
+        abs_file.parent.mkdir(parents=True)
+        finding = Finding(
+            rule_id="PY-001",
+            severity=Severity.CRITICAL,
+            file_path=abs_file,
+            line_number=1,
+            line_content="bad()",
+            message="test",
+        )
+        result = ScanResult(scan_root=tmp_path)
+        result.findings = [finding]
+        result.finish()
+        data = json.loads(format_sarif(result))
+        uri = data["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"]["uri"]
+        assert not uri.startswith("/"), f"URI must be relative, got: {uri}"
+        assert uri == "src/app.py"
+
+    def test_uri_falls_back_to_posix_when_no_scan_root(self):
+        """Without scan_root, URI is the path as-is (posix format)."""
+        finding = Finding(
+            rule_id="PY-001",
+            severity=Severity.CRITICAL,
+            file_path=Path("src/app.py"),
+            line_number=1,
+            line_content="bad()",
+            message="test",
+        )
+        result = ScanResult()
+        result.findings = [finding]
+        result.finish()
+        data = json.loads(format_sarif(result))
+        uri = data["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"]["uri"]
+        assert uri == "src/app.py"

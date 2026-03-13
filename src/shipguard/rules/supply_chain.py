@@ -151,10 +151,14 @@ def sc_004_missing_gitignore_entries(
     if file_path.name != ".gitignore":
         return findings
 
-    existing = set(content.splitlines())
+    existing = {
+        line.strip()
+        for line in content.splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    }
     missing = [
         entry for entry in _REQUIRED_GITIGNORE_ENTRIES
-        if not any(entry in line for line in existing)
+        if entry not in existing
     ]
     if missing:
         findings.append(
@@ -166,7 +170,7 @@ def sc_004_missing_gitignore_entries(
                 line_content=f"Missing entries: {', '.join(missing)}",
                 message=f".gitignore is missing secret-protection entries: {', '.join(missing)}",
                 cwe_id="CWE-312",
-                fix_hint=f"Add the following to .gitignore: {chr(10).join(missing)}",
+                fix_hint=f"Add the following to .gitignore:\n{'\n'.join(missing)}",
             )
         )
     return findings

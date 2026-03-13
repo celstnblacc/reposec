@@ -400,21 +400,18 @@ def shell_008_missing_set_euo(
     extensions=[".py"],
     cwe_id="CWE-78",
     compliance_tags=["SOC2-CC6.1"],
+    supersedes=["PY-005"],
 )
 def shell_009_shell_true_subprocess(
     file_path: Path, content: str, config: object = None
 ) -> list[Finding]:
     findings: list[Finding] = []
-    pattern = re.compile(
-        r"\bsubprocess\.\w+\(.*shell\s*=\s*True", re.DOTALL
-    )
-    # Line-by-line for better location reporting
     line_pattern = re.compile(r"shell\s*=\s*True")
     in_subprocess = False
     for i, line in enumerate(content.splitlines(), 1):
         if "subprocess." in line:
             in_subprocess = True
-        if in_subprocess and line_pattern.search(line):
+        if in_subprocess and not line.strip().startswith("#") and line_pattern.search(line):
             findings.append(
                 Finding(
                     rule_id="SHELL-009",

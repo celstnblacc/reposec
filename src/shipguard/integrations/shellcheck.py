@@ -16,13 +16,15 @@ _LEVEL_MAP = {
     "style": Severity.LOW,
 }
 
+
 def _find_binary() -> str | None:
     env = os.environ.get("SHIPGUARD_SHELLCHECK_BIN")
     if env:
         return env
     return shutil.which("shellcheck")
 
-def run_shellcheck(files: list[Path], target_dir: Path) -> list[Finding]:
+
+def run_shellcheck(files: list[Path]) -> list[Finding]:
     binary = _find_binary()
     if not binary:
         return []
@@ -47,14 +49,17 @@ def run_shellcheck(files: list[Path], target_dir: Path) -> list[Finding]:
             line = comment.get("line", 1)
             message = comment.get("message", "")
             code = comment.get("code", 0)
+            cwe = None  # ShellCheck JSON1 doesn't provide CWE mappings
+            replacements = (comment.get("fix") or {}).get("replacements") or []
+            fix_replacement = replacements[0].get("replacement", "") if replacements else ""
             findings.append(Finding(
                 rule_id=f"SHELLCHECK-SC{code}",
                 severity=severity,
                 file_path=file_path,
                 line_number=line,
-                line_content=comment.get("fix", {}).get("replacements", [{}])[0].get("replacement", "") if comment.get("fix") else "",
+                line_content="",  # original line not available from JSON1 format
                 message=f"ShellCheck SC{code}: {message}",
-                cwe_id="CWE-78",
-                fix_hint=f"See https://www.shellcheck.net/wiki/SC{code}",
+                cwe_id=cwe,
+                fix_hint=f"See https://www.shellcheck.net/wiki/SC{code}" + (f" — suggested fix: {fix_replacement}" if fix_replacement else ""),
             ))
     return findings

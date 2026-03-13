@@ -13,14 +13,14 @@ class TestRunShellcheck:
     def test_returns_empty_when_binary_missing(self, tmp_path):
         """Gracefully returns empty list when shellcheck not found."""
         with patch("shipguard.integrations.shellcheck._find_binary", return_value=None):
-            result = run_shellcheck([tmp_path / "test.sh"], tmp_path)
+            result = run_shellcheck([tmp_path / "test.sh"])
         assert result == []
 
     def test_returns_empty_when_no_shell_files(self, tmp_path):
         """Returns empty list when no shell files provided."""
         files = [tmp_path / "app.py", tmp_path / "config.json"]
         with patch("shipguard.integrations.shellcheck._find_binary", return_value="/usr/bin/shellcheck"):
-            result = run_shellcheck(files, tmp_path)
+            result = run_shellcheck(files)
         assert result == []
 
     def test_parses_json_output(self, tmp_path):
@@ -52,7 +52,7 @@ class TestRunShellcheck:
 
         with patch("shipguard.integrations.shellcheck._find_binary", return_value="/usr/bin/shellcheck"):
             with patch("subprocess.run", return_value=mock_proc):
-                result = run_shellcheck([shell_file], tmp_path)
+                result = run_shellcheck([shell_file])
 
         assert len(result) == 1
         assert result[0].rule_id == "SHELLCHECK-SC2046"
@@ -67,7 +67,7 @@ class TestRunShellcheck:
 
         with patch("shipguard.integrations.shellcheck._find_binary", return_value="/usr/bin/shellcheck"):
             with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("shellcheck", 60)):
-                result = run_shellcheck([shell_file], tmp_path)
+                result = run_shellcheck([shell_file])
         assert result == []
 
     def test_graceful_on_json_error(self, tmp_path):
@@ -80,7 +80,7 @@ class TestRunShellcheck:
 
         with patch("shipguard.integrations.shellcheck._find_binary", return_value="/usr/bin/shellcheck"):
             with patch("subprocess.run", return_value=mock_proc):
-                result = run_shellcheck([shell_file], tmp_path)
+                result = run_shellcheck([shell_file])
         assert result == []
 
     def test_level_mapping_error_to_high(self, tmp_path):
@@ -104,7 +104,7 @@ class TestRunShellcheck:
 
         with patch("shipguard.integrations.shellcheck._find_binary", return_value="/usr/bin/shellcheck"):
             with patch("subprocess.run", return_value=mock_proc):
-                result = run_shellcheck([shell_file], tmp_path)
+                result = run_shellcheck([shell_file])
 
         assert result[0].severity == Severity.HIGH
 
@@ -118,7 +118,7 @@ class TestRunShellcheck:
 
         with patch.dict(os.environ, {"SHIPGUARD_SHELLCHECK_BIN": "/custom/shellcheck"}):
             with patch("subprocess.run", return_value=mock_proc) as mock_run:
-                run_shellcheck([shell_file], tmp_path)
+                run_shellcheck([shell_file])
                 if mock_run.called:
                     cmd = mock_run.call_args[0][0]
                     assert cmd[0] == "/custom/shellcheck"

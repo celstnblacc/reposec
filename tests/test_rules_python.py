@@ -76,8 +76,38 @@ class TestPY004StartswithPath:
         assert len(findings) == 1
         assert findings[0].severity == Severity.HIGH
 
+    def test_detects_base_path_variable(self):
+        content = 'if base_path.startswith("/uploads"):'
+        findings = py_004_startswith_path(Path("test.py"), content)
+        assert len(findings) == 1
+
+    def test_detects_resolve_startswith(self):
+        content = 'if p.resolve().startswith("/var"):'
+        findings = py_004_startswith_path(Path("test.py"), content)
+        assert len(findings) == 1
+
     def test_ignores_non_path_startswith(self):
         content = 'if name.startswith("prefix"):'
+        findings = py_004_startswith_path(Path("test.py"), content)
+        assert len(findings) == 0
+
+    def test_no_false_positive_on_direction(self):
+        content = 'if direction.startswith("north"):'
+        findings = py_004_startswith_path(Path("test.py"), content)
+        assert len(findings) == 0
+
+    def test_no_false_positive_on_dirty_flag(self):
+        content = 'if dirty_flag.startswith("--"):'
+        findings = py_004_startswith_path(Path("test.py"), content)
+        assert len(findings) == 0
+
+    def test_no_false_positive_on_directory(self):
+        content = 'if directory.startswith("/tmp"):'
+        findings = py_004_startswith_path(Path("test.py"), content)
+        assert len(findings) == 0
+
+    def test_no_false_positive_on_profile(self):
+        content = 'if profile.startswith("admin"):'
         findings = py_004_startswith_path(Path("test.py"), content)
         assert len(findings) == 0
 

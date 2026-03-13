@@ -4,7 +4,7 @@ Thanks for your interest in contributing! Here's how to get started.
 
 ## Prerequisites
 
-- Python 3.12+
+- Python 3.10+
 - `pip` or `pipx`
 
 ## Setup

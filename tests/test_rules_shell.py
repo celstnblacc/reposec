@@ -185,6 +185,11 @@ class TestShell009SubprocessShell:
         findings = shell_009_shell_true_subprocess(Path("test.py"), content)
         assert len(findings) == 0
 
+    def test_ignores_commented_shell_true(self):
+        content = 'import subprocess\nsubprocess.run(cmd,\n    # shell=True\n)'
+        findings = shell_009_shell_true_subprocess(Path("test.py"), content)
+        assert len(findings) == 0
+
 
 class TestShellFixtureFiles:
     def test_vulnerable_fixture(self, shell_fixtures):
