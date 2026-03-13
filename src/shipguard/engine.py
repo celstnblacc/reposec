@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -11,7 +12,25 @@ import pathspec
 from shipguard.config import Config
 from shipguard.models import Finding, ScanResult, Severity
 from shipguard.rust_secrets import run_rust_secrets_scan
-from shipguard.rules import get_rules_for_file, load_builtin_rules, load_custom_rules
+from shipguard.rules import get_registry, get_rules_for_file, load_builtin_rules, load_custom_rules
+
+
+def _build_rule_sets(
+    config: Config,
+    include_rules: set[str] | None,
+    exclude_rules: set[str] | None,
+) -> tuple[set[str], set[str], int]:
+    """Resolve include/exclude sets and count rules that will be applied.
+
+    Returns (include_rule_ids, excluded_rule_ids, rules_applied).
+    """
+    include_rule_ids = include_rules or set()
+    excluded_rule_ids = set(config.disable_rules or []) | set(exclude_rules or set())
+    registry_ids = set(get_registry().keys())
+    if include_rule_ids:
+        registry_ids &= include_rule_ids
+    registry_ids -= excluded_rule_ids
+    return include_rule_ids, excluded_rule_ids, len(registry_ids)
 
 SUPPRESSION_RE = re.compile(r"(?:#|//)\s*shipguard:ignore\s+([\w\-,\s]+)")
 DEFAULT_EXCLUDES = [
@@ -56,9 +75,8 @@ def _discover_files(target_dir: Path, config: Config) -> list[Path]:
     return files
 
 
-def _get_suppressed_rules(content: str, line_number: int) -> set[str]:
+def _get_suppressed_rules(lines: list[str], line_number: int) -> set[str]:
     """Get suppressed rule IDs for a given line (checking current and previous line)."""
-    lines = content.splitlines()
     suppressed: set[str] = set()
     for offset in (line_number - 1, line_number - 2):  # current line, line above
         if 0 <= offset < len(lines):
@@ -86,6 +104,7 @@ def _scan_file(
     include = include_rules or set()
     excluded = excluded_rules or set()
     findings: list[Finding] = []
+    lines = content.splitlines()
 
     seen_line_rules: dict[int, set[str]] = {}
     for rule in rules:
@@ -100,23 +119,102 @@ def _scan_file(
 
         rule_findings = rule.func(file_path, content, config)
         for finding in rule_findings:
-            # PY-005 already covers subprocess shell=True in Python files.
-            if (
-                finding.rule_id == "SHELL-009"
-                and "PY-005" in seen_line_rules.get(finding.line_number, set())
-            ):
+            # Skip if a higher-priority rule already flagged this line for all rule IDs
+            # that this rule supersedes (declared via the supersedes field on RuleMeta).
+            line_rules_here = seen_line_rules.get(finding.line_number, set())
+            if any(sup in line_rules_here for sup in rule.supersedes):
                 continue
             # Check severity threshold
             if finding.severity < severity_threshold:
                 continue
-            # Check inline suppression
-            suppressed = _get_suppressed_rules(content, finding.line_number)
+            # Check inline suppression — reuse pre-split lines to avoid O(n*m)
+            suppressed = _get_suppressed_rules(lines, finding.line_number)
             if finding.rule_id in suppressed:
                 continue
             findings.append(finding)
             seen_line_rules.setdefault(finding.line_number, set()).add(finding.rule_id)
 
     return findings
+
+
+def _run_parallel_scans(
+    files: list[Path],
+    config: Config,
+    threshold: Severity,
+    include_rule_ids: set[str],
+    excluded_rule_ids: set[str],
+    max_workers: int,
+) -> tuple[list[Finding], int]:
+    """Run _scan_file in parallel; returns (findings, files_skipped)."""
+    all_findings: list[Finding] = []
+    files_skipped = 0
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {
+            pool.submit(
+                _scan_file, f, config, threshold, include_rule_ids, excluded_rule_ids
+            ): f
+            for f in files
+        }
+        for future in as_completed(futures):
+            try:
+                all_findings.extend(future.result())
+            except Exception as exc:
+                print(
+                    f"[shipguard] warning: error scanning {futures[future]}: {exc}",
+                    file=sys.stderr,
+                )
+                files_skipped += 1
+    return all_findings, files_skipped
+
+
+def scan_files(
+    files: list[Path],
+    target_dir: Path,
+    config: Config | None = None,
+    severity_threshold: Severity | None = None,
+    max_workers: int = 4,
+    include_rules: set[str] | None = None,
+    exclude_rules: set[str] | None = None,
+) -> ScanResult:
+    """Scan an explicit list of files (for incremental/staged scanning).
+
+    Args:
+        files: List of files to scan.
+        target_dir: Root directory (for context).
+        config: Configuration object. Uses defaults if None.
+        severity_threshold: Minimum severity to report.
+        max_workers: Number of parallel workers.
+        include_rules: Rule IDs to include (empty = all).
+        exclude_rules: Rule IDs to exclude.
+
+    Returns:
+        ScanResult with all findings.
+    """
+    if config is None:
+        config = Config()
+
+    load_builtin_rules()
+
+    threshold = severity_threshold or Severity(config.severity_threshold)
+    result = ScanResult()
+    include_rule_ids, excluded_rule_ids, rules_applied = _build_rule_sets(
+        config, include_rules, exclude_rules
+    )
+
+    result.files_scanned = len(files)
+    result.rules_applied = rules_applied
+
+    all_findings, skipped = _run_parallel_scans(
+        files, config, threshold, include_rule_ids, excluded_rule_ids, max_workers
+    )
+    result.files_skipped = skipped
+    all_findings.sort(
+        key=lambda f: (-f.severity.rank, str(f.file_path), f.line_number)
+    )
+    result.findings = all_findings
+    result.scan_root = target_dir
+    result.finish()
+    return result
 
 
 def scan(
@@ -150,19 +248,14 @@ def scan(
 
     threshold = severity_threshold or Severity(config.severity_threshold)
     result = ScanResult()
-    include_rule_ids = include_rules or set()
-    excluded_rule_ids = set(config.disable_rules or []) | set(exclude_rules or set())
+    include_rule_ids, excluded_rule_ids, rules_applied = _build_rule_sets(
+        config, include_rules, exclude_rules
+    )
 
     files = _discover_files(target_dir, config)
     result.files_scanned = len(files)
-
-    from shipguard.rules import get_registry
-
-    registry_ids = set(get_registry().keys())
-    if include_rule_ids:
-        registry_ids &= include_rule_ids
-    registry_ids -= excluded_rule_ids
-    result.rules_applied = len(registry_ids)
+    result.discovered_files = files
+    result.rules_applied = rules_applied
 
     all_findings: list[Finding] = []
     if config.use_rust_secrets:
@@ -178,32 +271,21 @@ def scan(
                 content = finding.file_path.read_text(encoding="utf-8", errors="replace")
             except (OSError, PermissionError):
                 content = ""
-            if content and finding.rule_id in _get_suppressed_rules(content, finding.line_number):
+            if content and finding.rule_id in _get_suppressed_rules(content.splitlines(), finding.line_number):
                 continue
             all_findings.append(finding)
 
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = {
-            pool.submit(
-                _scan_file,
-                f,
-                config,
-                threshold,
-                include_rule_ids,
-                excluded_rule_ids,
-            ): f for f in files
-        }
-        for future in as_completed(futures):
-            try:
-                file_findings = future.result()
-                all_findings.extend(file_findings)
-            except Exception:
-                result.files_skipped += 1
+    parallel_findings, skipped = _run_parallel_scans(
+        files, config, threshold, include_rule_ids, excluded_rule_ids, max_workers
+    )
+    result.files_skipped += skipped
+    all_findings.extend(parallel_findings)
 
     # Sort by severity (descending), then file path, then line number
     all_findings.sort(
         key=lambda f: (-f.severity.rank, str(f.file_path), f.line_number)
     )
     result.findings = all_findings
+    result.scan_root = target_dir
     result.finish()
     return result

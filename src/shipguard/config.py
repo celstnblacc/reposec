@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 CONFIG_FILENAMES = [".shipguard.yml", ".shipguard.yaml", "shipguard.yml"]
 
@@ -34,17 +35,26 @@ custom_rules_dirs: []
 # Optional: use Rust-accelerated secrets scanning (SEC-001/002/003)
 # Requires a built `shipguard-secrets` binary in PATH or SHIPGUARD_RUST_SECRETS_BIN.
 use_rust_secrets: false
+
+# Per-rule configuration overrides
+# rule_config:
+#   PY-011:
+#     skip_paths: ["tests/**", "scripts/seed_*.py"]
 """
 
 
 class Config(BaseModel):
     """ShipGuard scan configuration."""
 
-    severity_threshold: str = Field(default="medium")
+    severity_threshold: Literal["critical", "high", "medium", "low"] = Field(default="medium")
     exclude_paths: list[str] = Field(default_factory=list)
     disable_rules: list[str] = Field(default_factory=list)
     custom_rules_dirs: list[str] = Field(default_factory=list)
     use_rust_secrets: bool = Field(default=False)
+    rule_config: dict[str, dict] = Field(default_factory=dict)
+    external_tools: list[str] = Field(default_factory=list)
+    trufflehog_verify: bool = Field(default=False)
+    semgrep_config: str = Field(default="auto")
 
 
 def find_config(target_dir: Path) -> Path | None:
@@ -71,6 +81,11 @@ def load_config(config_path: Path | None = None, target_dir: Path | None = None)
 
     if config_path is not None and config_path.is_file():
         raw = yaml.safe_load(config_path.read_text()) or {}
-        return Config(**raw)
+        try:
+            return Config.model_validate(raw)
+        except ValidationError as exc:
+            raise ValueError(
+                f"Invalid ShipGuard config in {config_path}:\n{exc}"
+            ) from exc
 
     return Config()

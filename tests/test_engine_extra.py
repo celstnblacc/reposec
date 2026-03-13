@@ -49,6 +49,24 @@ def test_scan_file_skips_rule_without_func(tmp_path, monkeypatch):
     assert findings == []
 
 
+def test_scan_files_sets_scan_root(tmp_path):
+    """scan_files() must set scan_root so SARIF output uses relative paths."""
+    from shipguard.engine import scan_files
+    f = tmp_path / "safe.py"
+    f.write_text("x = 1\n")
+    result = scan_files(files=[f], target_dir=tmp_path)
+    assert result.scan_root == tmp_path
+
+
+def test_scan_populates_discovered_files(tmp_path):
+    """scan() must populate discovered_files so --with-external avoids re-discovery."""
+    from shipguard.engine import scan
+    (tmp_path / "safe.py").write_text("x = 1\n")
+    result = scan(target_dir=tmp_path)
+    assert isinstance(result.discovered_files, list)
+    assert any(p.name == "safe.py" for p in result.discovered_files)
+
+
 def test_scan_file_respects_inline_suppression(tmp_path, monkeypatch):
     p = tmp_path / "x.py"
     p.write_text("# shipguard:ignore CUST-SUP-1\nprint('x')\n")

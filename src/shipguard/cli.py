@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
 import typer
 from rich.console import Console
@@ -11,9 +13,9 @@ from rich.table import Table
 
 from shipguard import __version__
 from shipguard.config import DEFAULT_CONFIG_TEMPLATE, load_config
-from shipguard.engine import scan
+from shipguard.engine import _discover_files, _get_suppressed_rules, scan, scan_files
 from shipguard.formatters import get_formatter
-from shipguard.models import Severity
+from shipguard.models import ScanResult, Severity
 from shipguard.rules import get_registry, load_builtin_rules, load_custom_rules
 
 app = typer.Typer(
@@ -22,6 +24,23 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 console = Console()
+
+
+def _emit_output(result: ScanResult, formatter, fmt: str, output: Optional[Path]) -> None:
+    """Write formatted scan output to file or stdout."""
+    if fmt == "terminal":
+        if output:
+            output.write_text(formatter(result))
+            console.print(f"Report written to {output}")
+        else:
+            formatter(result, console=console)
+    else:
+        text = formatter(result)
+        if output:
+            output.write_text(text)
+            console.print(f"Report written to {output}")
+        else:
+            typer.echo(text)
 
 
 def _parse_rule_csv(raw: Optional[str]) -> set[str]:
@@ -61,8 +80,8 @@ def scan_cmd(
     path: Path = typer.Argument(
         ".", help="Directory to scan.", exists=True, file_okay=False, resolve_path=True,
     ),
-    format: str = typer.Option(
-        "terminal", "--format", "-f", help="Output format: terminal, json, markdown.",
+    fmt: str = typer.Option(
+        "terminal", "--format", "-f", help="Output format: terminal, json, markdown, sarif.",
     ),
     severity: str = typer.Option(
         None, "--severity", "-s",
@@ -89,9 +108,14 @@ def scan_cmd(
         "--exclude-rules",
         help="Comma-separated rule IDs to exclude.",
     ),
+    with_external: bool = typer.Option(
+        False,
+        "--with-external/--no-external",
+        help="Run external tools (ShellCheck, Semgrep, TruffleHog, Trivy) and merge findings.",
+    ),
 ) -> None:
     """Scan a directory for security vulnerabilities."""
-    format = format.lower()
+    fmt = fmt.lower()
     config = load_config(config_path=config_file, target_dir=path)
     if rust_secrets is not None:
         config.use_rust_secrets = rust_secrets
@@ -126,26 +150,34 @@ def scan_cmd(
         exclude_rules=exclude_rule_ids,
     )
 
+    if with_external:
+        from shipguard.integrations import run_shellcheck, run_semgrep, run_trufflehog, run_trivy
+        all_files = result.discovered_files or _discover_files(path, config)
+        sev_threshold = threshold or Severity(config.severity_threshold)
+        external_findings = []
+        external_findings.extend(run_shellcheck(all_files))
+        external_findings.extend(run_semgrep(path, config.semgrep_config))
+        external_findings.extend(run_trufflehog(path, config.trufflehog_verify))
+        external_findings.extend(run_trivy(path))
+        for f in external_findings:
+            if f.severity < sev_threshold:
+                continue
+            try:
+                lines = f.file_path.read_text(encoding="utf-8", errors="replace").splitlines()
+            except (OSError, PermissionError):
+                lines = []
+            if f.rule_id not in _get_suppressed_rules(lines, f.line_number):
+                result.findings.append(f)
+        result.findings.sort(
+            key=lambda f: (-f.severity.rank, str(f.file_path), f.line_number)
+        )
+
     try:
-        formatter = get_formatter(format)
+        formatter = get_formatter(fmt)
     except ValueError as e:
         console.print(f"[red]{e}[/red]")
         raise typer.Exit(code=1)
-    if format == "terminal":
-        if output:
-            # Need recorded output for file
-            text = formatter(result)
-            output.write_text(text)
-            console.print(f"Report written to {output}")
-        else:
-            formatter(result, console=console)
-    else:
-        text = formatter(result)
-        if output:
-            output.write_text(text)
-            console.print(f"Report written to {output}")
-        else:
-            typer.echo(text)
+    _emit_output(result, formatter, fmt, output)
 
     if result.findings:
         raise typer.Exit(code=1)
@@ -153,21 +185,20 @@ def scan_cmd(
 
 @app.command("list-rules")
 def list_rules(
-    format: str = typer.Option(
+    fmt: str = typer.Option(
         "terminal", "--format", "-f", help="Output format: terminal, json.",
     ),
 ) -> None:
     """List all available security rules."""
-    format = format.lower()
-    if format not in {"terminal", "json"}:
-        console.print(f"[red]Unknown format: {format!r}. Choose from: terminal, json[/red]")
+    fmt = fmt.lower()
+    if fmt not in {"terminal", "json"}:
+        console.print(f"[red]Unknown format: {fmt!r}. Choose from: terminal, json[/red]")
         raise typer.Exit(code=1)
 
     load_builtin_rules()
     registry = get_registry()
 
-    if format == "json":
-        import json
+    if fmt == "json":
         rules = [
             {
                 "id": r.id,
@@ -176,6 +207,7 @@ def list_rules(
                 "description": r.description,
                 "extensions": r.extensions,
                 "cwe_id": r.cwe_id,
+                "compliance_tags": r.compliance_tags,
             }
             for r in sorted(registry.values(), key=lambda r: r.id)
         ]
@@ -222,3 +254,60 @@ def init(
         raise typer.Exit(code=1)
     config_path.write_text(DEFAULT_CONFIG_TEMPLATE)
     console.print(f"[green]Created {config_path}[/green]")
+
+
+@app.command("scan-staged")
+def scan_staged_cmd(
+    path: Annotated[Path, typer.Argument(help="Repository root directory.")] = Path("."),
+    fmt: str = typer.Option(
+        "terminal", "--format", "-f", help="Output format: terminal, json, markdown, sarif.",
+    ),
+    severity: str = typer.Option(
+        "low", "--severity", "-s", help="Minimum severity: critical, high, medium, low.",
+    ),
+    output: Optional[Path] = typer.Option(
+        None, "--output", "-o", help="Write output to file instead of stdout.",
+    ),
+) -> None:
+    """Scan only git-staged files (optimized for pre-commit hooks)."""
+    resolved_path = path.resolve()
+    git_result = subprocess.run(
+        ["git", "diff", "--name-only", "--cached", "--diff-filter=ACMR"],
+        capture_output=True, text=True, cwd=str(resolved_path)
+    )
+    if git_result.returncode != 0:
+        console.print(f"[red]git diff failed: {git_result.stderr.strip()}[/red]")
+        raise typer.Exit(code=1)
+    staged = [
+        resolved_path / f.strip()
+        for f in git_result.stdout.splitlines()
+        if f.strip()
+    ]
+    staged = [f for f in staged if f.is_file()]
+
+    if not staged:
+        typer.echo("No staged files to scan.")
+        raise typer.Exit(0)
+
+    try:
+        threshold = Severity(severity.lower())
+    except ValueError:
+        console.print(f"[red]Invalid severity: {severity}[/red]")
+        raise typer.Exit(code=1)
+
+    result = scan_files(
+        files=staged,
+        target_dir=resolved_path,
+        severity_threshold=threshold,
+    )
+
+    fmt = fmt.lower()
+    try:
+        formatter = get_formatter(fmt)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(code=1)
+    _emit_output(result, formatter, fmt, output)
+
+    if result.findings:
+        raise typer.Exit(code=1)

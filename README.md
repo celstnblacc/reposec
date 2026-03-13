@@ -31,7 +31,7 @@ pip install -e ".[dev]"
 ### In a project (virtual environment)
 
 ```bash
-python3.12 -m venv .venv && source .venv/bin/activate && pip install "git+https://github.com/celstnblacc/shipguard.git"
+python3 -m venv .venv && source .venv/bin/activate && pip install "git+https://github.com/celstnblacc/shipguard.git"
 ```
 
 ### Install from GitHub (correct URL syntax)
@@ -110,7 +110,39 @@ shipguard init
 shipguard init /path/to/target-repo
 ```
 
-## Development Staging Bootstrap (Go-Live)
+### Sample Terminal Output
+
+```
+ShipGuard Scan Results
+──────────────────────────────────────────────────────
+  Files scanned : 42      Rules applied : 48
+  Findings      : 3       Files skipped : 0
+  Duration      : 0.21s
+──────────────────────────────────────────────────────
+
+ CRITICAL  src/deploy.sh:14
+           Rule  : SHELL-001  eval-injection
+           CWE   : CWE-94
+           Code  : eval $(get_user_input)
+           Fix   : Avoid eval; use arrays or direct execution instead
+
+ HIGH      scripts/build.py:37
+           Rule  : SHELL-009  shell-true-subprocess
+           CWE   : CWE-78
+           Code  :     result = subprocess.run(cmd, shell=True)
+           Fix   : Use shell=False with a list of arguments instead
+
+ MEDIUM    .gitignore:1
+           Rule  : SC-004  missing-gitignore-secret-entries
+           CWE   : CWE-312
+           Fix   : Add the following to .gitignore: *.key, *.pem, *.p12
+──────────────────────────────────────────────────────
+Exit code 1 (findings detected)
+```
+
+## Development Staging Bootstrap (Maintainers Only)
+
+> **Note:** This section is for ShipGuard maintainers running the full go-live pipeline. Regular users do not need Docker or staging to use ShipGuard.
 
 Use the helper script to create a local staging target for `go-live`/`infra-probe` verification:
 

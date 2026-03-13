@@ -10,23 +10,23 @@ from shipguard.models import Finding, Severity
 class TestSuppression:
     def test_suppresses_rule_on_same_line(self):
         content = 'eval(data)  # shipguard:ignore PY-003'
-        suppressed = _get_suppressed_rules(content, 1)
+        suppressed = _get_suppressed_rules(content.splitlines(), 1)
         assert "PY-003" in suppressed
 
     def test_suppresses_rule_on_line_above(self):
         content = '# shipguard:ignore PY-003\neval(data)'
-        suppressed = _get_suppressed_rules(content, 2)
+        suppressed = _get_suppressed_rules(content.splitlines(), 2)
         assert "PY-003" in suppressed
 
     def test_suppresses_multiple_rules(self):
         content = '# shipguard:ignore PY-003, PY-006'
-        suppressed = _get_suppressed_rules(content, 1)
+        suppressed = _get_suppressed_rules(content.splitlines(), 1)
         assert "PY-003" in suppressed
         assert "PY-006" in suppressed
 
     def test_no_suppression_without_comment(self):
         content = 'eval(data)'
-        suppressed = _get_suppressed_rules(content, 1)
+        suppressed = _get_suppressed_rules(content.splitlines(), 1)
         assert len(suppressed) == 0
 
 

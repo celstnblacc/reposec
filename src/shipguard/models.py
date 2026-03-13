@@ -73,7 +73,9 @@ class ScanResult:
     files_skipped: int = 0
     rules_applied: int = 0
     duration_seconds: float = 0.0
-    _start_time: float = field(default_factory=time.monotonic, repr=False)
+    scan_root: Path | None = field(default=None)
+    discovered_files: list[Path] = field(default_factory=list)
+    _start_time: float = field(default_factory=time.monotonic, repr=False, init=False)
 
     def finish(self) -> None:
         self.duration_seconds = time.monotonic() - self._start_time

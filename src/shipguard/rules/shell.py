@@ -18,6 +18,7 @@ SHELL_EXTS = [".sh", ".bash", ".zsh", ".ksh"]
     description="Detects eval with command substitution, enabling code injection",
     extensions=SHELL_EXTS,
     cwe_id="CWE-94",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def shell_001_eval_injection(
     file_path: Path, content: str, config: object = None
@@ -51,6 +52,7 @@ def shell_001_eval_injection(
     description="Detects unquoted variable expansions in dangerous command arguments",
     extensions=SHELL_EXTS,
     cwe_id="CWE-78",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def shell_002_unquoted_variable(
     file_path: Path, content: str, config: object = None
@@ -184,6 +186,7 @@ def _has_unquoted_var(line: str) -> bool:
     description="Detects bash -c with interpolated variables enabling injection",
     extensions=SHELL_EXTS,
     cwe_id="CWE-78",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def shell_003_bash_c_interpolation(
     file_path: Path, content: str, config: object = None
@@ -217,6 +220,7 @@ def shell_003_bash_c_interpolation(
     description="Detects user input in sed replacement strings",
     extensions=SHELL_EXTS,
     cwe_id="CWE-78",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def shell_004_sed_injection(
     file_path: Path, content: str, config: object = None
@@ -251,6 +255,7 @@ def shell_004_sed_injection(
     description="Detects variables in printf JSON templates without escaping",
     extensions=SHELL_EXTS,
     cwe_id="CWE-116",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def shell_005_json_printf(
     file_path: Path, content: str, config: object = None
@@ -285,6 +290,7 @@ def shell_005_json_printf(
     description="Detects unquoted GITHUB_OUTPUT redirection",
     extensions=SHELL_EXTS + [".yml", ".yaml"],
     cwe_id="CWE-78",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def shell_006_unquoted_github_output(
     file_path: Path, content: str, config: object = None
@@ -315,6 +321,7 @@ def shell_006_unquoted_github_output(
     description="Detects mktemp usage without corresponding trap for cleanup",
     extensions=SHELL_EXTS,
     cwe_id="CWE-459",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def shell_007_mktemp_no_cleanup(
     file_path: Path, content: str, config: object = None
@@ -355,6 +362,7 @@ def shell_007_mktemp_no_cleanup(
     description="Detects shell scripts missing set -euo pipefail",
     extensions=SHELL_EXTS,
     cwe_id="CWE-754",
+    compliance_tags=["SOC2-CC6.1"],
 )
 def shell_008_missing_set_euo(
     file_path: Path, content: str, config: object = None
@@ -391,21 +399,19 @@ def shell_008_missing_set_euo(
     description="Detects Python subprocess calls with shell=True in shell scripts context",
     extensions=[".py"],
     cwe_id="CWE-78",
+    compliance_tags=["SOC2-CC6.1"],
+    supersedes=["PY-005"],
 )
 def shell_009_shell_true_subprocess(
     file_path: Path, content: str, config: object = None
 ) -> list[Finding]:
     findings: list[Finding] = []
-    pattern = re.compile(
-        r"\bsubprocess\.\w+\(.*shell\s*=\s*True", re.DOTALL
-    )
-    # Line-by-line for better location reporting
     line_pattern = re.compile(r"shell\s*=\s*True")
     in_subprocess = False
     for i, line in enumerate(content.splitlines(), 1):
         if "subprocess." in line:
             in_subprocess = True
-        if in_subprocess and line_pattern.search(line):
+        if in_subprocess and not line.strip().startswith("#") and line_pattern.search(line):
             findings.append(
                 Finding(
                     rule_id="SHELL-009",

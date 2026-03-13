@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import sys
 from dataclasses import dataclass, field
@@ -25,6 +26,8 @@ class RuleMeta:
     extensions: list[str]
     cwe_id: str | None = None
     func: RuleFunc | None = field(default=None, repr=False)
+    compliance_tags: list[str] = field(default_factory=list)
+    supersedes: list[str] = field(default_factory=list)
 
 
 # Global rule registry
@@ -39,6 +42,8 @@ def register(
     description: str,
     extensions: list[str],
     cwe_id: str | None = None,
+    compliance_tags: list[str] | None = None,
+    supersedes: list[str] | None = None,
 ) -> Callable[[RuleFunc], RuleFunc]:
     """Decorator to register a rule function."""
 
@@ -51,6 +56,8 @@ def register(
             extensions=extensions,
             cwe_id=cwe_id,
             func=func,
+            compliance_tags=compliance_tags or [],
+            supersedes=supersedes or [],
         )
         _registry[id] = meta
         # Attach metadata to function for introspection
@@ -106,14 +113,20 @@ def load_custom_rules(rule_dirs: list[Path]) -> int:
         if not rule_dir.is_dir():
             continue
         for py_file in sorted(rule_dir.rglob("*.py")):
-            module_name = f"shipguard_custom_{hash(py_file.resolve()) & 0xFFFFFFFF:x}"
+            digest = hashlib.md5(str(py_file.resolve()).encode()).hexdigest()[:12]
+            module_name = f"shipguard_custom_{digest}"
             if module_name in sys.modules:
                 continue
             spec = importlib.util.spec_from_file_location(module_name, py_file)
             if spec is None or spec.loader is None:
                 continue
             module = importlib.util.module_from_spec(spec)
+            try:
+                spec.loader.exec_module(module)
+            except Exception as exc:
+                print(f"[shipguard] warning: failed to load custom rule {py_file}: {exc}", file=sys.stderr)
+                sys.modules.pop(module_name, None)
+                continue
             sys.modules[module_name] = module
-            spec.loader.exec_module(module)
             loaded += 1
     return loaded
